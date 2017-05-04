@@ -1,0 +1,9 @@
+.directory
+*.aux
+*.bbl
+*.log
+*.pdf
+*.gz
+*.toc
+*.blg
+
