@@ -7,7 +7,42 @@
 \usepackage{listings}
 \usepackage[nottoc]{tocbibind}
 \author{Baptiste Pauget}
+\usepackage[left=3cm,right=3cm,top=4cm,top=3cm]{geometry}
+\usepackage{wrapfig}
+\usepackage {tikz}
+\usetikzlibrary {positioning}
+\usepackage{subfig}
+\usepackage{adjustbox}
+
+\definecolor {processblue}{rgb}{0.5,0.5,0.96}
+\definecolor {processred}{rgb}{0.96,0.5,0.5}
+\newcommand{\code}{\texttt}
+\renewcommand{\indent}{~\\\vspace{-.8cm}}
 \title{M1 Internship : Compiling Whiley to FPGAs}
+
+
+
+\lstdefinestyle{customc}{
+	belowcaptionskip=1\baselineskip,
+	breaklines=true,
+	frame=single,
+	xleftmargin=\parindent,
+	language=Octave,morekeywords={int,bool},
+	showstringspaces=false,
+	basicstyle=\footnotesize\ttfamily,
+	keywordstyle=\bfseries\color{green!40!black},
+	commentstyle=\itshape\color{purple!40!black},
+	identifierstyle=\color{blue},
+	stringstyle=\color{orange},
+}
+
+\lstset{
+	numberstyle=\small\color{gray},
+	%	rulecolor=\color{black},
+	keywordstyle=\color{blue},
+	showlines=true,
+	style=customc
+}
 
 \begin{document}
 \maketitle
@@ -73,13 +108,10 @@ This feature can be used to duplicate circuits and provide calculation on vector
 
 
 \subsection{The Hardware Description Languages - VHDL}
+\indent
 
 FPGA's configurations were originally design with circuit diagrams (as done for ASIC projects) but are know made using hardware description languages (HDLs). The main ones are Verilog and VHDL.
 
-\subsubsection{Other HDLs : Verilog}
-
-
-Verilog
 
 \subsubsection{Structure}
 
@@ -241,48 +273,163 @@ The global structure of the code is kept in a strait-forward manner :
 
 
 \subsection{Types compilation}
+\indent 
+
+Wyil files are composed of types and functions definitions. Because they are used in functions, The types are first compiled to their VHDL equivalent.
 
 \subsubsection{Primitive types}
+\indent
 
-The Wyil primitive types are compiled in an obvious way as follows :
+Some Wyil primitive types can be compiled in an obvious way to VHDL type :
 
 \begin{itemize}
-	\item int $\longrightarrow$ signed(31 downto 0) [Temporary]
-	\item bool $\longrightarrow$ boolean
-	\item byte $\longrightarrow$ std\_logic\_vector(7 downto 0) 
+	\item \code{int} $\longrightarrow$ \code{signed(31 downto 0)} [Temporary ?]
+	\item \code{bool} $\longrightarrow$ \code{boolean}
+	\item \code{byte} $\longrightarrow$ \code{std\_logic\_vector(7 downto 0)}
 \end{itemize}
+
+The case of the \code Any type is special : it can't be represented with a finite number of primitive type so it is not supported.
 
 \subsubsection{Complex types}
+\indent
 
-Other types are represented as a tree with primitive types as leaves.
+Other types are handled with a recursive structure that contains named fields associated with types. A general type is thus represented by a tree with primitive types as leaves.
 
 \begin{itemize}
-	\item \textbf{Record types} : The root of the type tree contains the fields of the record type as children.
-	\item \textbf{Union types} :
+	\item \textbf{\code Null and \code Void type} : It is represented with an empty compound type.
+	\item[] 
+	\begin{minipage}[b]{.8\textwidth}
+		\vspace{-.01cm}
+		\begin{wrapfigure}{r}{0.4\textwidth}
+			\begin{tikzpicture}[-latex, semithick , state/.style ={rectangle, top color = white, bottom color = processblue!20, draw, processblue, text=blue, minimum width = 4.5 cm, minimum height = 0.5 cm}]
+			\small
+			
+			\node[rectangle ,top color =white , bottom color = processred!20 ,
+			draw,processred , text=red , minimum width =1 cm] (A) at (-2.5,-0.2) {$*$};
+			
+			\node[state] (B) at (1,-1) {\_a : signed(31 downto 0)};
+			\node[state] (C) at (1,-1.6) {\_b : boolean};
+			\path (A.south) edge [out=-90, in=180] (B.west);
+			\path (A.south) edge [out=-90, in=180] (C.west);
+			\normalsize
+			\end{tikzpicture}
+		\end{wrapfigure}
+		~\vspace{.01cm}
+		\item \textbf{Record types} : The root of the type tree contains the fields of the record type as children.
+		
+		\begin{flushright}
+			Type \code{\{int a, bool b\}}
+		\end{flushright}
+	\end{minipage} 
+	\item[] 
+		\begin{minipage}[H]{.8\textwidth}
+			\vspace{-.02cm}
+			\begin{wrapfigure}{r}{0.4\textwidth}
+				\begin{tikzpicture}[-latex, semithick , state/.style ={rectangle, top color = white, bottom color = processblue!20, draw, processblue, text=blue, minimum width = 4.5 cm, minimum height = 0.5 cm, align = left}]
+					\small
+		
+					\node[rectangle, top color = white, bottom color = processred!20, draw,processred, text=red, minimum width = 1 cm] (A) at (-2.5,-0.2) {$*$};
+		
+					\node[state] (B) at (1,-1) {\_vl\_t0 : signed(31 downto 0)};
+					\node[state] (C) at (1,-1.6) {\_is\_t0 : boolean};
+					\node[state] (D) at (1,-2.2) {\_vl\_t1 : std\_logic(7 downto 0)};
+					\node[state] (E) at (1,-2.8) {\_is\_t1 : boolean};
+					\path (A.south) edge [out=-90, in=180] (B.west);
+					\path (A.south) edge [out=-90, in=180] (C.west);
+					\path (A.south) edge [out=-90, in=180] (D.west);
+					\path (A.south) edge [out=-90, in=180] (E.west);
+					\normalsize
+				\end{tikzpicture}
+			\end{wrapfigure}
+			~\vspace{.02cm}
+			\item \textbf{Union types} : Each type of the disjunction is stored with an additional boolean value that indicate whether it is the current type or not. This non space optimal choice enables easy flow typing.
+
+			\begin{flushright}
+			Type \code{int|byte}
+			\end{flushright}
+		\end{minipage}
 \end{itemize}
 
+
 \subsection{Functions compilation}
+\indent
 
-Functions are compiled using concurrent statements, and use process statements only for the introduction of registers. 
+The functions compilation process consists in building data-flow graphs, optimizing them and converting them toward VHDL code.
 
-\subsubsection{Building the Control-Flow graph}
+\subsubsection{Data-flow graph}
+\indent
 
-To ensure the use of a fine grained parallelism, the data control-flow graph of each function is build.
+Data-flow graphs expose the fine grained parallelism that occurs inside each function. They seem thus unavoidable to take advantage of the FPGA's structure. They describe the succession of operations that will transform the input data to the outputs.
 
-It is done at the signal level, which means that values of complex types are separated is they atomic components.
+
+Data-flow graphs are built at the signal level, which means that values of complex types are separated is they atomic components, because it reveals more parallelism and it corresponds to the VHDL code that will be produced.
+
+
+\begin{figure}[h]
+	\centering
+	\subfloat[Whiley code]{\adjustbox{valign=b}{\lstinputlisting[language=Octave, numbers=left, linewidth=.35\textwidth]{dfg.whiley}}}
+	\qquad
+	\subfloat[Data-flow graph]{\adjustbox{valign=b}{\includegraphics[scale=.16]{dfg.png}}}
+	\caption{Example of data-flow graph}
+\end{figure}
+
 
 This graph is made of two types of nodes : 
 \begin{itemize}
-	\item \textbf{Operation nodes} : represents a operation
-	\item \textbf{Label nodes} : represents the name of the data at the corresponding place in the source file.
+	\item \textbf{Value nodes} : represent constants or inputs/outputs (of the function or the called functions). They have only one source.
+	\item \textbf{Operation nodes} : represent operations, with their operands as sources.
 \end{itemize}
 
-\paragraph{Remark :} The use of label nodes is not needed for the data-flow graph (the identifiers could be associated with each arrow) but it makes the signal naming easier when producing VHDL code. \\
+
+To improve the readability of the produced VHDL code, the Whiley variables' name is kept as an arrow label. 
 
 
-This graph can then be internally  optimised and modified (inlining).
+\subsubsection{Merging returns}
+\indent
 
-A extra care has to be taken with the management of returns : whereas they can be placed anywhere in the source code (inside some if statement), they need to be gathered in a unique output signal in the hardware design.
+A extra care has to be taken with the management of returns : whereas several return statements can be placed anywhere in the source code (in any block of code), VHDL entities define their interface, and each output signal has to be compute from only one expression.
+Returns thus need to be gathered as if they were stored in a special variable.
+
+
+
+\newbox\caseA
+\begin{lrbox}{\caseA}
+	\begin{minipage}[t]{.45\textwidth}
+	\begin{lstlisting}[language=Octave, numbers=right]
+function e(int c) -> int|bool:
+    int|bool a = c
+    if c == 0:
+      a = false
+    return a
+	\end{lstlisting}
+\end{minipage}
+\end{lrbox}
+
+
+\newbox\caseB
+\begin{lrbox}{\caseB}
+	\begin{minipage}[t]{.45\textwidth}
+		\begin{lstlisting}[language=Octave, frame=single]
+function e(int c) -> int|bool:
+    if c == 0:
+      return false
+    return c
+  
+		\end{lstlisting}
+	\end{minipage}
+\end{lrbox}
+
+
+\begin{figure}[h]
+	\centering
+	\subfloat[Unique return]{\usebox\caseA}
+	\hspace{.77cm}
+	\subfloat[Multiple returns]{\usebox\caseB}
+	
+	\subfloat[Resulting data-flow graph]{\includegraphics[scale=.28]{a.png}}
+	\caption{Two descriptions of the same data-flow graph}
+\end{figure}
+
 
 \subsubsection{Building a pipeline}
 
