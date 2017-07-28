@@ -3,465 +3,2205 @@
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{amssymb}
+\usepackage[dvipsnames,rgb]{xcolor}
 \usepackage{graphicx}
 \usepackage{listings}
 \usepackage[nottoc]{tocbibind}
 \author{Baptiste Pauget}
-\usepackage[left=3cm,right=3cm,top=4cm,top=3cm]{geometry}
+\usepackage[left=2.5cm,right=2.5cm,top=3cm,top=2.5cm]{geometry}
 \usepackage{wrapfig}
+\usepackage {circuitikz}
 \usepackage {tikz}
 \usetikzlibrary {positioning}
+\usetikzlibrary{intersections}
+\usetikzlibrary{calc}
+\usepackage{tcolorbox,lipsum}
 \usepackage{subfig}
 \usepackage{adjustbox}
+\usepackage{float}
+\usepackage{hyperref}
+\hypersetup{
+	colorlinks=true,
+	linkcolor=blue,
+	filecolor=magenta,      
+	citecolor=ForestGreen,
+	urlcolor=brown,
+}
+\usetikzlibrary{shapes,snakes}
+%\usetikzlibrary{arrows, decorations.markings}
 
-\definecolor {processblue}{rgb}{0.5,0.5,0.96}
-\definecolor {processred}{rgb}{0.96,0.5,0.5}
+\definecolor {processblue}{rgb}{0.2,0.2,0.96}
+\definecolor {processred}{rgb}{0.96,0.2,0.2}
+\definecolor {processgreen}{rgb}{0.2,0.96,0.2}
+\definecolor {processpurple}{rgb}{0.96,0.2,0.96}
+\definecolor {processyellow}{rgb}{0.96,0.96,0.2}
+\definecolor {processcyan}{rgb}{0.2,0.96,0.96}
+%\definecolor {processred}{HTML}{22F022}
+\definecolor {l1}{rgb}{1,1,0}
+\definecolor {l2}{rgb}{1,.5,0}
+\definecolor {l3}{rgb}{1,0,0}
+\definecolor {l4}{rgb}{1,0,1}
+\definecolor {l5}{rgb}{0,0,1}
+
+
+
+\definecolor {c151515}{HTML}{151515}
+\definecolor {cF01515}{HTML}{F01515}
+\definecolor {c15F015}{HTML}{15F015}
+\definecolor {c1515F0}{HTML}{1515F0}
+\definecolor {cF0F015}{HTML}{F0F015}
+\definecolor {cF015F0}{HTML}{F015F0}
+\definecolor {c15F0F0}{HTML}{15F0F0}
+\definecolor {cF0F0F0}{HTML}{F0F0F0}
+\definecolor {grey1}{HTML}{D0D0D0}
+\definecolor {grey2}{HTML}{E0E0E0}
+\definecolor {grey3}{HTML}{F0F0F0}
+
 \newcommand{\code}{\texttt}
 \renewcommand{\indent}{~\\\vspace{-.8cm}}
-\title{M1 Internship : Compiling Whiley to FPGAs}
-
-
+\newcommand{\pindent}{~\\\indent}
+\title{\vspace{-1.6cm}M1 Internship : Compiling Whiley to FPGAs}
+%
+%\tikzstyle{vecArrow} = [thick, decoration={markings,mark=at position
+%   1 with {\arrow[semithick]{open triangle 60}}},
+%   double distance=1.4pt,
+%   preaction = {decorate},
+%   postaction = {draw,line width=1.4pt, white}
+%   ]
 
 \lstdefinestyle{customc}{
 	belowcaptionskip=1\baselineskip,
 	breaklines=true,
 	frame=single,
 	xleftmargin=\parindent,
-	language=Octave,morekeywords={int,bool},
 	showstringspaces=false,
-	basicstyle=\footnotesize\ttfamily,
-	keywordstyle=\bfseries\color{green!40!black},
-	commentstyle=\itshape\color{purple!40!black},
-	identifierstyle=\color{blue},
+	basicstyle=\small\ttfamily,
+	keywordstyle=\bfseries\color{blue!40!black},
+	commentstyle=\fontfamily{qcs}\itshape\color{purple!40!black},
+	identifierstyle=\color{green!40!black},
 	stringstyle=\color{orange},
 }
 
-\lstset{
-	numberstyle=\small\color{gray},
-	%	rulecolor=\color{black},
-	keywordstyle=\color{blue},
-	showlines=true,
-	style=customc
+\newcommand{\whileyLine}{\lstinline[language=Whiley,basicstyle=\normalsize\ttfamily]}
+
+\lstdefinelanguage{Whiley}
+{
+	morekeywords={
+		import,
+		if,
+		else,
+		function,
+		return,
+		int, bool, byte,
+		any, void, null,
+		ensures,
+		requires,
+		is,
+		all,
+		where,
+		while,
+		type
+	},
+	sensitive=true, % keywords are not case-sensitive
+	morecomment=[l]{//}, % l is for line comment
+	morecomment=[s]{/*}{*/}, % s is for start and end delimiter
+	morestring=[b]" % defines that strings are enclosed in double quotes
 }
 
+\lstset{
+	language	=	Whiley,
+	xleftmargin	=	2*\listingnumberwidth,
+	numbersep	=	1em,
+	captionpos	=	b, % Position of the Caption (t for top, b for bottom)
+	extendedchars=	true, % Allows 256 instead of 128 ASCII characters
+	tabsize		=	2, % number of spaces indented when discovering a tab 
+	columns		=	fixed, % make all characters equal width
+	keepspaces	=	true, % does not ignore spaces to fit width, convert tabs to spaces
+	showstringspaces=false, % lets spaces in strings appear as real spaces
+	breaklines	=	true, % wrap lines if they don't fit
+	frame		=	trbl, % draw a frame at the top, right, left and bottom of the listing
+%	frameround=tttt, % make the frame round at all four corners
+%	framesep=4pt, % quarter circle size of the round corners
+	%numbers=left, % show line numbers at the left
+	numberstyle	=	\tiny\ttfamily, % style of the line numbers
+	commentstyle=	\color{gray}, % style of comments
+	%keywordstyle=\color{eclipsePurple}, % style of keywords
+	%stringstyle=\color{eclipseBlue}, % style of strings
+	%
+	numberstyle	=	\small\color{gray},
+	%	rulecolor=\color{black},
+	keywordstyle=	\color{blue},
+	%showlines	=	false,
+	style		=	customc
+}
+
+\hyphenpenalty=10000
+
+
+\newcommand{\val}{\mathcal V}
+\newcommand{\typ}{\mathcal T}
+\newcommand{\ord}{\mathcal O}
+\newcommand{\lea}{\mathcal L}
+
+
+\tikzset{
+	-latex, semithick , 
+			union/.style ={rectangle, top color = white, bottom color = processblue!20, draw, processblue, text=black, minimum width = 0.6 cm, minimum height = 0.5 cm}, 
+			intersection/.style ={rectangle, top color = white, bottom color = processblue!20, draw, processblue, text=black, minimum width = 0.6 cm, minimum height = 0.5 cm}, 
+			negation/.style ={rectangle, top color = white, bottom color = processblue!20, draw, processblue, text=black, minimum width = 0.6 cm, minimum height = 0.5 cm}, 
+			record/.style ={rectangle, top color = white, bottom color = processblue!20, draw, processblue, text=black, minimum width = 0.6 cm, minimum height = 0.5 cm}, 
+			primitive/.style ={rectangle, top color = white, bottom color = processblue!20, draw, processblue, text=black, minimum width = 1.9 cm, minimum height = 0.5 cm, align=center}, 
+			leaf/.style ={rectangle, top color = white, bottom color = processred!20, draw, processred, text=black, minimum width = 1.9 cm, minimum height = 0.5 cm, align=center}, 
+			root/.style ={rectangle, top color = white, bottom color = processblue!20, draw, processblue, text=black, minimum width = 0.5 cm, minimum height = 0.5 cm, align=center}, 
+			general/.style 2 args ={rectangle, top color = white, bottom color = #1!20, draw, #1, text=black, minimum width = #2 cm, minimum height = 0.5 cm, align=center}, 
+}
+
+
+\newcommand{\Dfrac}[2]{%
+	\ooalign{%
+		$\genfrac{}{}{2.4pt}0{\phantom{#1}}{\phantom{#2}}$\cr%
+		$\genfrac{}{}{.8pt}0{#1}{#2}$\cr%
+		$\color{white}\genfrac{}{}{.8pt}0{\phantom{#1}}{\phantom{#2}}$}
+}
+
+
+
+\tikzset{
+ shrink inner sep/.code={
+   \pgfkeysgetvalue{/pgf/inner xsep}{\currentinnerxsep}
+   \pgfkeysgetvalue{/pgf/inner ysep}{\currentinnerysep}
+   \pgfkeyssetvalue{/pgf/inner xsep}{\currentinnerxsep - 0.5\pgflinewidth}
+   \pgfkeyssetvalue{/pgf/inner ysep}{\currentinnerysep - 0.5\pgflinewidth}
+   }
+}
+
+\tikzset{horizontal shaded border/.style args={#1 and #2}{
+    append after command={
+       \pgfextra{%                 
+          \begin{pgfinterruptpath}
+                \path[rounded corners=2mm,left color=#1,right color=#2]
+                ($(\tikzlastnode.south west)+(-\pgflinewidth,-\pgflinewidth)$) 
+                rectangle
+                ($(\tikzlastnode.north east)+(\pgflinewidth,\pgflinewidth)$);        
+           \end{pgfinterruptpath}
+        } 
+    }
+  },
+  vertical shaded border/.style args={#1 and #2}{
+    append after command={
+       \pgfextra{%                 
+          \begin{pgfinterruptpath}
+                \path[rounded corners,top color=#1,bottom color=#2]
+                ($(\tikzlastnode.south west)+(-\pgflinewidth,-\pgflinewidth)$) 
+                rectangle
+                ($(\tikzlastnode.north east)+(\pgflinewidth,\pgflinewidth)$);        
+           \end{pgfinterruptpath}
+        } 
+    }
+  }
+}
+
+
+
+
+
+\pgfdeclareshape{muxB}{
+	\anchor{center}{\pgfpointorigin} % within the node, (0,0) is the center
+	\anchor{text} % this is used to center the text in the node
+	{\pgfpoint{-.5\wd\pgfnodeparttextbox}{-.5\ht\pgfnodeparttextbox}}
+	\savedanchor\trueOpt{\pgfpoint{-.6cm}{-.3cm}} % pin 1
+	\anchor{in true}{\trueOpt}
+	\savedanchor\falseOpt{\pgfpoint{-.6cm}{.3cm}} % pin 2
+	\anchor{in false}{\falseOpt}
+	\savedanchor\cond{\pgfpoint{0cm}{-.8cm}} % pin 3
+	\anchor{in cond}{\cond}
+	\savedanchor\res{\pgfpoint{.6cm}{.0cm}} % pin 3
+	\anchor{out}{\res}
+	\foregroundpath{ % border and pin numbers are drawn here
+		\pgfsetlinewidth{0.03cm}
+		\pgfplothandlerpolygon
+		\pgfplotstreamstart
+		\pgfplotstreampoint{\pgfpoint{-.3cm}{-.6cm}}
+		\pgfplotstreampoint{\pgfpoint{.3cm}{-.4cm}}
+		\pgfplotstreampoint{\pgfpoint{.3cm}{.4cm}}
+		\pgfplotstreampoint{\pgfpoint{-.3cm}{.6cm}}
+		\pgfplotstreamend
+		\pgfusepath{draw} 
+		\pgfsetlinewidth{0.02cm}
+		\pgfpathmoveto{\pgfpoint{-.3cm}{.3cm}}
+		\pgfpathlineto{\pgfpoint{-.6cm}{.3cm}}
+		\pgfpathmoveto{\pgfpoint{-.3cm}{-.3cm}}
+		\pgfpathlineto{\pgfpoint{-.6cm}{-.3cm}}
+		\pgfpathmoveto{\pgfpoint{.3cm}{0cm}}
+		\pgfpathlineto{\pgfpoint{.6cm}{0cm}}
+		\pgfpathmoveto{\pgfpoint{0cm}{-.5cm}}
+		\pgfpathlineto{\pgfpoint{0cm}{-.8cm}}
+		\pgftext[left,at={\pgfpoint{-.2cm}{.3cm}}]{\scriptsize {$0$}}
+		\pgftext[left,at={\pgfpoint{-.2cm}{-.3cm}}]{\scriptsize {$1$}}
+		\pgfusepath{draw}
+}}
+
+\pgfdeclareshape{muxT}{
+	\anchor{center}{\pgfpointorigin} % within the node, (0,0) is the center
+	\anchor{text} % this is used to center the text in the node
+	{\pgfpoint{-.5\wd\pgfnodeparttextbox}{-.5\ht\pgfnodeparttextbox}}
+	\savedanchor\trueOpt{\pgfpoint{-.6cm}{.3cm}} % pin 1
+	\anchor{in true}{\trueOpt}
+	\savedanchor\falseOpt{\pgfpoint{-.6cm}{-.3cm}} % pin 2
+	\anchor{in false}{\falseOpt}
+	\savedanchor\cond{\pgfpoint{0cm}{.8cm}} % pin 3
+	\anchor{in cond}{\cond}
+	\savedanchor\res{\pgfpoint{.6cm}{.0cm}} % pin 3
+	\anchor{out}{\res}
+	\foregroundpath{ % border and pin numbers are drawn here
+		\pgfsetlinewidth{0.03cm}
+		\pgfplothandlerpolygon
+		\pgfplotstreamstart
+		\pgfplotstreampoint{\pgfpoint{-.3cm}{-.6cm}}
+		\pgfplotstreampoint{\pgfpoint{.3cm}{-.4cm}}
+		\pgfplotstreampoint{\pgfpoint{.3cm}{.4cm}}
+		\pgfplotstreampoint{\pgfpoint{-.3cm}{.6cm}}
+		\pgfplotstreamend
+		\pgfusepath{draw} 
+		\pgfsetlinewidth{0.02cm}
+		\pgfpathmoveto{\pgfpoint{-.3cm}{.3cm}}
+		\pgfpathlineto{\pgfpoint{-.6cm}{.3cm}}
+		\pgfpathmoveto{\pgfpoint{-.3cm}{-.3cm}}
+		\pgfpathlineto{\pgfpoint{-.6cm}{-.3cm}}
+		\pgfpathmoveto{\pgfpoint{.3cm}{0cm}}
+		\pgfpathlineto{\pgfpoint{.6cm}{0cm}}
+		\pgfpathmoveto{\pgfpoint{0cm}{.5cm}}
+		\pgfpathlineto{\pgfpoint{0cm}{.8cm}}
+		
+		\pgftext[left,at={\pgfpoint{-.2cm}{.3cm}}]{\scriptsize {$1$}}
+		\pgftext[left,at={\pgfpoint{-.2cm}{-.3cm}}]{\scriptsize {$0$}}
+		\pgfusepath{draw}
+}}
+\pgfdeclareshape{Block}{
+	\anchor{center}{\pgfpointorigin} % within the node, (0,0) is the center
+	\anchor{text} % this is used to center the text in the node
+	{\pgfpoint{-.5\wd\pgfnodeparttextbox}{-.5\ht\pgfnodeparttextbox}}
+	\savedanchor\a{\pgfpoint{-1.8cm}{.55cm}} % pin 1
+	\anchor{in start}{\a}
+	\savedanchor\b{\pgfpoint{-1.8cm}{-.55cm}} % pin 2
+	\anchor{in data}{\b}
+	\savedanchor\c{\pgfpoint{1.8cm}{.55cm}} % pin 3
+	\anchor{out done}{\c}
+	\savedanchor\d{\pgfpoint{1.8cm}{-.55cm}} % pin 3
+	\anchor{out data}{\d}
+	\foregroundpath{ % border and pin numbers are drawn here
+		\pgfsetlinewidth{0.03cm}
+		\pgfpathrectanglecorners{\pgfpoint{1.5cm}{1cm}}{\pgfpoint{-1.5cm}{-1cm}}
+		\pgfusepath{draw} 
+		\pgfsetlinewidth{0.02cm}
+		\pgfpathmoveto{\pgfpoint{-1.5cm}{.55cm}}
+		\pgfpathlineto{\pgfpoint{-1.8cm}{.55cm}}
+		\pgfpathmoveto{\pgfpoint{-1.5cm}{-.55cm}}
+		\pgfpathlineto{\pgfpoint{-1.8cm}{-.55cm}}
+		\pgfpathmoveto{\pgfpoint{1.5cm}{.55cm}}
+		\pgfpathlineto{\pgfpoint{1.8cm}{.55cm}}
+		\pgfpathmoveto{\pgfpoint{1.5cm}{-.55cm}}
+		\pgfpathlineto{\pgfpoint{1.8cm}{-.55cm}}
+		
+		\pgftext[left,at={\pgfpoint{-1.4cm}{.55cm}}]{\scriptsize {Start}}
+		\pgftext[left,at={\pgfpoint{-1.4cm}{-.55cm}}]{\scriptsize {Data}}
+		\pgftext[right,at={\pgfpoint{1.4cm}{.55cm}}]{\scriptsize {Done}}
+		\pgftext[right,at={\pgfpoint{1.4cm}{-.55cm}}]{\scriptsize {Data}}
+		
+		\pgfusepath{draw}
+}}
+\pgfdeclareshape{BlockCB}{
+	\anchor{center}{\pgfpointorigin} % within the node, (0,0) is the center
+	\anchor{text} % this is used to center the text in the node
+	{\pgfpoint{-.5\wd\pgfnodeparttextbox}{-.5\ht\pgfnodeparttextbox}}
+	\savedanchor\a{\pgfpoint{-2.3cm}{1.1cm}} % pin 1
+	\anchor{in start}{\a}
+	\savedanchor\b{\pgfpoint{-2.3cm}{-1.1cm}} % pin 2
+	\anchor{in data}{\b}
+	\savedanchor\c{\pgfpoint{2.3cm}{1.1cm}} % pin 3
+	\anchor{out done}{\c}
+	\savedanchor\d{\pgfpoint{2.3cm}{-1.1cm}} % pin 3
+	\anchor{out data}{\d}
+	\savedanchor\e{\pgfpoint{2.3cm}{0cm}} % pin 3
+	\anchor{out test}{\e}
+	\foregroundpath{ % border and pin numbers are drawn here
+		\pgfsetlinewidth{0.03cm}
+		\pgfpathrectanglecorners{\pgfpoint{2cm}{1.5cm}}{\pgfpoint{-2cm}{-1.5cm}}
+		\pgfusepath{draw} 
+		\pgfsetlinewidth{0.02cm}
+		\pgfpathmoveto{\pgfpoint{-2cm}{1.1cm}}
+		\pgfpathlineto{\pgfpoint{-2.3cm}{1.1cm}}
+		\pgfpathmoveto{\pgfpoint{-2cm}{-1.1cm}}
+		\pgfpathlineto{\pgfpoint{-2.3cm}{-1.1cm}}
+		\pgfpathmoveto{\pgfpoint{2cm}{1.1cm}}
+		\pgfpathlineto{\pgfpoint{2.3cm}{1.1cm}}
+		\pgfpathmoveto{\pgfpoint{2cm}{0cm}}
+		\pgfpathlineto{\pgfpoint{2.3cm}{0cm}}
+		\pgfpathmoveto{\pgfpoint{2cm}{-1.1cm}}
+		\pgfpathlineto{\pgfpoint{2.3cm}{-1.1cm}}
+		
+		\pgftext[left,at={\pgfpoint{-1.9cm}{1.1cm}}]{\scriptsize {Start}}
+		\pgftext[left,at={\pgfpoint{-1.9cm}{-1.1cm}}]{\scriptsize {Data}}
+		\pgftext[right,at={\pgfpoint{1.9cm}{1.1cm}}]{\scriptsize {Done}}
+		\pgftext[right,at={\pgfpoint{1.9cm}{0cm}}]{\scriptsize {Test}}
+		\pgftext[right,at={\pgfpoint{1.9cm}{-1.1cm}}]{\scriptsize {Data}}
+		
+		\pgfusepath{draw}
+}}
+
+\pgfdeclareshape{Reg}{
+	\anchor{center}{\pgfpointorigin} % within the node, (0,0) is the center
+	\anchor{text} % this is used to center the text in the node
+	{\pgfpoint{-.5\wd\pgfnodeparttextbox}{-.5\ht\pgfnodeparttextbox}}
+	\savedanchor\a{\pgfpoint{.5cm}{0cm}} % pin 1
+	\anchor{east}{\a}
+	\savedanchor\b{\pgfpoint{-.5cm}{0cm}} % pin 2
+	\anchor{west}{\b}
+	\savedanchor\c{\pgfpoint{0cm}{.5cm}} % pin 3
+	\anchor{north}{\c}
+	\savedanchor\d{\pgfpoint{0cm}{-.5cm}} % pin 3
+	\anchor{south}{\d}
+	\foregroundpath{ % border and pin numbers are drawn here
+		\pgfsetlinewidth{0.03cm}
+		\pgfpathrectanglecorners{\pgfpoint{.5cm}{.5cm}}{\pgfpoint{-.5cm}{-.5cm}}
+		\pgfusepath{draw} 
+		\pgfsetlinewidth{0.01cm}
+		\pgfpathmoveto{\pgfpoint{-.5cm}{0cm}}
+		\pgfpathlineto{\pgfpoint{0cm}{.5cm}}
+		\pgfpathmoveto{\pgfpoint{-.5cm}{-.5cm}}
+		\pgfpathlineto{\pgfpoint{.5cm}{.5cm}}
+		\pgfpathmoveto{\pgfpoint{0cm}{-.5cm}}
+		\pgfpathlineto{\pgfpoint{.5cm}{0cm}}
+		
+		
+		\pgfusepath{draw}
+}}
+
+
+
+
 \begin{document}
+	
+	\setcounter{tocdepth}{2}
 \maketitle
-\section*{Introduction}
+\section*{Introduction}\indent
+\addcontentsline{toc}{section}{Introduction}
+
+Improving code performances lies more and more in the relevant use of computational helpers \cite{nikolov2008systematic}. Computing platforms like OpenCL or CUDA that enable to relocate resource consuming calculations to graphics processing unit (GPU) are now ordinary. These framework are rather low-level and requires either a thorough learning or the use of higher level libraries that reduce their flexibility. A orthogonal concern of programming language is static checking. As the rise of strongly typed languages (Rust, Scala, Haskell, ...) reveals it, extended static checking is well-liked since it improve greatly the development process, lowering the debug work \cite{flanagan2013pldi}. 
+The Whiley language goes a step further, by providing an embedded support of specification, giving a chance to adjust the scope of compilation-time checks. Building a compiler from Whiley to VHDL tries to reconcile this two goals.
+
+
+\section*{Acknowledgements}\indent
+
+I would like to thank D. J. Pearce and A. Potanin for welcoming me in the Programming Languages Research group of Victoria University of Wellington and helping me during this internship. 
+
+I would like to thanks also T. Bourke, M. Pouzet and I. Delais without whom I could not have come in Wellington.
+
 \tableofcontents
 
-\section{FPGA compilation}
 
-\subsection{FPGA : a specific hardware}
+\newpage
+
+\section{Working with FPGAs}\indent
+
+FPGAs give an affordable way to work with hardware without any knowledge in electronics. Their use nevertheless requires a specific work-flow that needs to be understood to write relevant FPGA configurations.
+
+
+\subsection{A specific hardware} \indent
+
+Field Programmable Gate Arrays (FPGAs) are integrated circuits that can be configure by the user.
+They try to gather the power of Application Specific Integrated Circuits (ASICs) with the flexibility of general computation devices (CPUs), by giving a way to reconfigure hardware without any physical operations.
 
 \subsubsection{Usage}
+\indent
 
-A Field Programmable Gate Array (FPGAs) is an integrated circuit that can be configure by the user.
-It tries to gather the power of Application Specific Integrated Circuits (ASICs) with the flexibility of general computation devices (CPUs), by giving a way to reconfigure hardware without physical operations.
+FPGA's behaviour is defined by loading a hardware configuration at its start-up. Inputs and outputs of the device can then be used in a wider system as if they were separated by the requested circuit. This flexibility makes them appropriated for
 
-FPGAs enable a faster and less energy consuming computation for specific applications, and they are thus used mainly in :
 \begin{itemize}
-	\item \textbf{Prototyping ASICs} : ASICs are still faster than FPGAs but their development requires one to create new physical circuits to test them, thus FPGAs can make the process easier and cheaper.
-	\item \textbf{Computation helpers} : The performances specific applications (images processing, ...) can be enhanced with hardware compiled function (FFT), and FPGAs are an easy way to do so.
-	\item \textbf{Highly parallel applications} : because of their high parallelism potential, FPGAs are useful in applications processing lots of data simultaneously, like network interfaces (where large bandwidth is needed).
+	\item \textbf{Prototyping ASICs} : ASICs are still faster than FPGAs but they cannot be reconfigure once they are built. FPGAs allows their development process to be easier and cheaper.
+	\item \textbf{Computation helpers} : The performances of specific applications (images processing, ...) can be enhanced with hardware compiled function (FFT), and FPGAs are an easy way to do so.
+	\item \textbf{Highly parallel applications} : because of their high parallelism potential, FPGAs are useful in applications that process lots of data simultaneously, like network interfaces (where large bandwidth is needed).
 \end{itemize}
 
-To use the device, a configuration has to be loaded at each power on (the configuration storage is RAM based and lost when the FPGA is not powered).
 
-\subsubsection{Structural organisation}
 
-FPGAs are organised as a array of interconnected computation cells, with some specific components.
+\begin{wrapfigure}[18]{r}{.4\textwidth}
+	\vspace{-60pt}
+	\center
+	\includegraphics[scale=0.26]{Spartan.png}
+	\caption{Spartan-3A Architecture \cite{Spartan}}
+	\label{Sptan3A}
+\end{wrapfigure}
 
-\begin{figure}[h]
-	\includegraphics[scale=0.3]{Spartan.png}
-	\caption{Spartan-3A Platform Architecture \cite{Spartan}}
-\end{figure}
+\subsubsection{Structural organisation}\indent
 
-Here are the major architecture components of Xilinx Spartan-3 FPGAs \cite{Spartan}. 
-The numbers give the composition of the Spartan XC3S500E FPGA.
+FPGAs are organised as an array of interconnected identical computation cells, fortified with specific circuits. The coarse structure of FPGAs is illustrated in \autoref{Sptan3A} and contains the following components (with their number in Spartan XC3S500E devices) :
 
 \begin{itemize}
 	\item \textbf{Configurable Logic Blocks (CLB)} (1,164) : The atomic units of FPGAs.
 	They are divided in 4 slices  containing
 	\begin{itemize}
 		\item \textbf{2 Look-Up Tables} (LUT) : Implementation of logic computation in small LUTs (4 to 1 bits) that enable to compute any boolean function (They are RAM memory based)
-		\item \textbf{2 Storage Elements} : Can be used as flip-flops or latches
+		\item \textbf{2 Storage Elements} : Can be used as flip-flops (registers) or latches
 	\end{itemize}
 	\item \textbf{Input/Outputs Blocks} (232) : They provide an interface to the outside, preserving the internal impedances used in the FPGA.
+\end{itemize}
+
+\begin{itemize}
 	\item \textbf{RAM Blocks} (20 : 368,640 bits) : These 18Kbits blocks can be used as RAM/ROM, with up to two I/O ports, with several memory organisation. (reading up to 36 bits with each port).
 	\item \textbf{Multipliers Blocks} (20) : They avoid an overuse of CLBs for multiplicative operations.
 	\item \textbf{Digital Clock Manager Blocks} : They can duplicate, multiply, divide and delay clock signals
-	
 \end{itemize}
 
-Some additional specific logic provide improved performances for specific operations (carry/arithmetic logic, dedicated multiplexers, ...).
-
-\subsubsection{Introducing time}
-
-The use of time is provided by external clocks. Usual boards that contain FPGAs include several clocks connected with predefined input ports. Using the specific clock manager blocks, the signals can be duplicated and the frequency changed.
-
-\subsubsection{Parallelism and execution model}
-
-All the CLBs are independent and can be updated at the same time. See section \ref{Concurr}
-for details about how this parallelism is supported in the FPGA configuration language.
-
-This feature can be used to duplicate circuits and provide calculation on vector of data rather than a single value at a time or it can support the simultaneous computation of independent parts of the process.
+Some additional specific logic is provided to improve performances for complex operations (carry/arithmetic logic, dedicated multiplexers, ...).
 
 
-\subsection{The Hardware Description Languages - VHDL}
+
+
+\subsection{Hardware Description Languages - VHDL}
 \indent
 
-FPGA's configurations were originally design with circuit diagrams (as done for ASIC projects) but are know made using hardware description languages (HDLs). The main ones are Verilog and VHDL.
-
-
-\subsubsection{Structure}
-
-The following design units structure VHDL code :
-
-\paragraph{Package/Library}~\\
-Organise the different entities in groups.
-
-\paragraph{Entity}~\\
-It provides the interface of a wire circuit to be used in other implementations. It declares the typed input and output ports of the component.
-
-\paragraph{Architecture}~\\
-It contains the implementation of an entity. Several architectures can be provided for one entity, and some statements enable to choose the one to use. The body of an architecture is made of several concurrent statements.
-
-\subsubsection{Architecture's content}
-
-\paragraph{Concurrent Statements}
-~\\ \label{Concurr}
-These statements are mutually independent and their order of declaration is meaningless. They are evaluated when an event occurs on a signals they are sensitive to occur. The modification of a signal's value will thus trigger the computation of every statement using this signal at the same time. The major types of concurrent statements are :
-
-\begin{itemize}
-	\item \textbf{Signal assignments} (\textless=) that gives a name to the result of a expression for future use
-	\item \textbf{Conditional signal assignment} (when/select) that construct a multiplexer
-	\item \textbf{Component instantiations} that instantiates an entity interface with internal signal
-	\item \textbf{Process statement} that introduces an other level of description ( discussed below).
-\end{itemize}
-
-
-\paragraph{Sequential Statements}
-~\\
-Process statements introduce behavioural description. It is closer to that is found in a software programming language : when a process statement is evaluated, the sequential statements it contains are computed respecting their order and some higher level abstractions are available :
-
-\begin{itemize}
-	\item \textbf{Variables} can be defined and used in a similar way as for a software programming language, holding different values through the process.
-	\item \textbf{If statements} introduce disjunctions (contrary to multiplexers, the variables/signals don't need to be defined in each alternative).
-\end{itemize}
-
-The synthesizer convert it to a hardware configuration that will behave the way described in the Process statement. This work is quiet long and can produce large configurations.
-
-
-A major limitation of process lies in the fact components can't be instantiated inside a process.
-
-The processes appears as a black box for the other concurrent statements of the architecture : the update of the modified signals is seen as simultaneous.
-
-Because the concurrent statement is the only one with an explicit sensitivity list, it is used to introduce signals that change only on the modification of other ones (clocks for example). This is the way register-based memory is introduced.
-
-\subsubsection{Registers}
-
-Registers are signals that keep the same value between the events of other signals. They are mainly used with a clock as trigger.
-
-They are inferred by the synthesizer when an incomplete if statements is encounter : if a signal is set in only some branches of the disjunction, a register will be generated.
+The prime description of FPGA's configurations uses net-list, which are a very low-level representation of components and connexions between them. Higher-level descriptions were developed including circuit diagrams and hardware description languages (HDLs). The most used ones are Verilog and VHDL. Because of documentation available and a seemingly easier learning  than Verilog, VHDL was chosen as the targeted language of the compiler. A brief introduction to the main aspects of this language follows\cite{FRV}.
 
 
 
-\begin{lstlisting}[language=VHDL, frame=single, numbers=left, title=Example of register generation]
-  Regist: process(clock) is
-  begin
-    if (rising_edge(clock)) then
-      reg <= newValue;
-    end if;
-  end process Regist;
+\begin{wrapfigure}[16]{r}{.45\textwidth}
+	\vspace{-35pt}
+\begin{lstlisting}[language=VHDL]
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+	
+entity foo is
+  port (
+	foo_in  : in  signed(31 downto 0);
+	foo_out : out signed(31 downto 0)
+  );
+end entity foo;
+	
+architecture Behavioural of foo is
+  -- Declarations
+begin
+ -- Circuit description
+end architecture Behavioural;
 \end{lstlisting}
+\end{wrapfigure}
+
+\subsubsection{Overview}\indent
+
+Contrary to Verilog, VHDL (VHSIC Hardware Description Language) is a typed HDL : wires or bench of wires are represented with typed \textit{signals} and the correctness of statements is checked during compilation.\\
+
+As in numerous programming languages, sources are structured in packages and libraries.
+The main compilation unit is the \textbf{entity}, that defines an interface (input/output signals) and comes with one or more \textbf{architectures} that describe the inner circuit.
 
 
-Because generated registers is an indirect process, the if statements have to be carefully used to avoid unwanted effects.
+\subsubsection{Describing the circuit} \indent
 
-\subsection{The compilation process}
-
-The compilation of VHDL code to FPGA configuration file is a complex and time consuming process. It notably differs from software programming language compilation because of the physical constraints required by the targeted device.
-
-\subsubsection{Tools}
-
-Because the resulting files strongly depends on the FPGA features, the compilation of VHDL code to an effective FPGA configuration is provided by the commercial tools of the FPGA vendors.
+VHDL is a data-flow language : a signal represents the state of some data at a precise place of the computation process and architecture statements depicts operations that link these signals. Their order is thus insignificant and signals can be assigned at most once.
 
 
-\subsubsection{Synthesis step}
+\paragraph{Concurrent statements : the combinatorial description} \pindent
+\label{Concurr}
 
-The major steps of the compilation process are
+A combinatorial circuit does not contain any loop. This ensure that it will stabilize if the inputs keep their values a long enough time. The following concurrent statements are converted to combinatorial circuits during the compilation toward FPGA configuration file.
 
 \begin{itemize}
-	\item \textbf{Parsing and type checking} : Verification that the code is well-formed
-	\item \textbf{Synthesis} : Production of net-lists.
-	\item \textbf{Mapping} : Conversion of the net-lists to LUTs.
-	\item \textbf{Place and route} : Positioning the LUTs and specific blocks on the FPGA, regarding the constraints (output pins, clocks), and drawing the connections
-	\item \textbf{Time analysis} : Circuit analysis to determine the longest delay (clock)
-	\item \textbf{Configuration generation} : Generating a configuration file for the FPGA.
+	\item \textbf{Signal assignments} (\code{<=}) that links the result of an expression for future use. Expressions are defined using signals and bitwise operations or typed operations whose circuit are described in imported libraries (additions, multiplication, ...).
+	\item \textbf{Conditional signal assignments} (\code{when}/\code{select}) that construct multiplexers choosing between several signals regarding the values of other ones.
+	\item \textbf{Component instantiations} that instantiate an external entity, linking its interface with internal signals. They correspond to software programming languages' function call except in the fact that the circuit is duplicated at each instantiation.
+	\item \textbf{Process statements} that introduce an other kind of description of circuit discuss below.
 \end{itemize}
 
-\subsubsection{Simulations}
 
-Because of the expensive time cost of the synthesis and the poor debugging aids, simulators provide a way to enhance the development process.
+\paragraph{Sequential statements : the behavioural description}\pindent
 
-\begin{figure}[h]
-	\includegraphics[scale=0.12]{Debug.png}
-	\caption{View of the simulator}
-\end{figure}
+Process statements delineated a description that is closer to software programming languages : its inner statements are executed sequentially and higher level constructions such as variables or \code{if} statements are available.\\
 
-The simulation enables one to investigate the configuration behaviour in an almost interactive way that greatly simplifies the searching of errors. It gives a tracking in time and of the impedances through the whole circuit as they should be in a physical device.
+Variables strongly differ from signals in that they are accessible inside the \code{process} statement only, and they behave as software programming languages' variables, holding the last assigned value.\\
 
-The simulation is supported inside VHDL, with special statements (wait for 2ms, for example) or data types (floats) that are not supported by the synthesizer but that make the analysis easier.
+A harder work is done by the compiler to convert these statements to a circuit that will behave as described. It results in a larger configuration and a longer compilation time.
 
-The simulation configuration consist of a separated VHDL file that defines the inputs values through the simulation time.
+\subsubsection{Execution model}
+
+\paragraph{Parallelism}\pindent
 
 
-\subsection{Existing high level compilers}
+Concurrent statement are independently re-evaluated when an event occurs on on of their signals they are sensible to. This sensibility list is implicitly set to the read signals of the expression except for \code {process} statements that defines it explicitly.The completion of the expression's evaluation triggers a event on the signals that were write by it.\\
 
-The complexity of VHDL and it's distance to usual software programming languages prevent programmers from using it.
-To give an easier way to introduce hardware in software applications, some high-level compilers have been developed.
+Concurrent statements are atomic computation units : every outputs are set at the same time. This is particularly important for \code {process} statements : read signals hold the value they had at the start of the evaluation, and the ones that are write are all updated at the same time at the end of the process. A signal that is write several time through the process will only keep the last value.
 
-\subsubsection{Targeted execution environments}
+\paragraph{Considerations on time}\pindent
 
-Most of the high-level compilation tools targets highly heterogeneous systems, aiming at providing a unique language to describe both software and hardware parts. These execution environments can be composed of multiple CPUs, GPUs, FPGAs or other specific hardware devices.
 
-These systems have in common the existence of a main processor (CPU) that will organised the compilation.
+The evaluation of expressions lies in the stabilization of its circuit's output impedances after a change in its inputs. The laws of physics prevent it to be immediate, and the require time is known as \textit{delta-delay}. These delays should not interfere with the design conception, but may prevent result to comply with frequency constraints.\\
 
-OpenCL...
+Introducing time in a design is achieved with external clocks. Usual boards that contain FPGAs include several clocks connected with predefined input ports. Using specific clock manager blocks, these signals can be duplicated and their frequency changed. 
+To ensure the configuration will behave the desire way, clock's frequencies must be low enough to ensure that the period is greater than the \textit{delta-delay} of the clocked circuit. 
 
-\subsubsection{Xilinx's Vivado tool}
+	\begin{wrapfigure}[7]{r}{.2\textwidth}
+	\vspace{-40pt}
+		\center
+		\begin{circuitikz}[scale=.7, transform shape, -,terminal/.style={
+				% The shape:
+				rounded rectangle,
+				minimum size=1.6mm,
+				% The rest
+				thick,draw=black}]
+			
+			\draw (0, 1) node[nor port] (S) {};
+			\draw (0,-1) node[nor port] (R) {};
+			\draw (S.out) -- ++(0,-.5) -- ($(R.in 1)+(0,.5)$) -- (R.in 1);
+			\draw (R.out) -- ++(0,.5) -- ($(S.in 2)+(0,-.5)$) -- (S.in 2);
+		
+		\node at ($(S.in 1)-(.8,0)$) (s) {\huge s};
+		\draw (s) --  (S.in 1);
+		\node at ($(R.in 2)-(.8,0)$) (r) {\huge r};
+		\draw (r) --  (R.in 2);
+		\node at ($(R.out)+(.8,0)$) (x) {\huge x};
+		\draw (x) --  (R.out);
+			
+		\end{circuitikz}
+		\caption{SR-latch}
+		\label{Dloops}
+	\end{wrapfigure}
 
-The Vivado Design Suite gathers tools to develop a software application with hardware parts. It gives a C to HDL compiler that enables to describe hardware parts in C.
 
-The tool compiles each hardware source to an entity, inlining the called functions.
+\subsubsection{Registers}\indent
 
-It adds a set of signals to each function that enable to link the different parts of the project (see section \ref{Opts} for details about it).
-These signals are :
+
+Storing values between updating signals is a very useful feature that is usually achieved using \textit{latches} or \textit{flip-flops}. This circuits are intended to be use with at must one active input and are non combinatorial since they contain feed-backs : their outputs depend indirectly of themselves. Such feed-backs are called \textit{positive} when the circuit tends to stabilized and \textit{latches} or \textit{flip-flops} are of this kind. \\
+
+
+\begin{wrapfigure}[8]{r}{.34\textwidth}
+	\vspace{-15pt}
+\begin{lstlisting}[language=VHDL, frame=single, title=Register generation]
+Regist: process(clock) is
+begin
+  if (rising_edge(clock)) then
+    reg <= newValue;
+  end if;
+end process Regist;
+\end{lstlisting}
+\end{wrapfigure}
+
+Registers are signals that update their value only when an event occurs on an other one. They are mainly used with a clock signal as trigger.\\
+
+They are inferred by the synthesizer when an incomplete if statements is encounter : \code�{if} a signal is set in only some branches of the disjunction, a register will be generated. To avoid unwanted effects, \code�{if} statements have to be carefully used.
+
+
+
+
+
+\subsection{The compilation process} \indent
+
+The compilation of VHDL code to FPGA configuration file is a complex and time consuming process. Sources are first converted to net-lists (the synthesis) that are used to generate the configuration. 
+
+\subsubsection{Compilation step} \indent
+
+The compilation of net-lists to a configuration file strongly depends on the targeted device and is handle by commercial tools provided by FPGAs vendors.  The major steps of the this process are :
+
 \begin{itemize}
-	\item \textbf{Input start signal} : has to be activated when new entries are send to the input ports.
-	\item \textbf{Output done signal} : tells that the computation is finished for the latest entries in computation.
-	\item \textbf{Output idle signal} : tells if a computation is in process.
-	\item \textbf{Output ready signal} : tells if new entries can be sent.
+	\item \textbf{Mapping} : Conversion of net-list operations to LUTs and specific logic blocks that are available on the device.
+	\item \textbf{Place and route} : Positioning the LUTs and specific blocks on the FPGA, regarding the constraints (output pins, clocks), and drawing the connections between theses blocks.
+	\item \textbf{Time analysis} : Analysis of the circuit to determine the maximum delay needed for the circuit to get stabilized on a change of its inputs.
+	\item \textbf{Configuration generation} : Generating a configuration file that can be loaded on the FPGA.
 \end{itemize}
 
-The C statements are compiled to their equivalent VHDL concurrent statements, and processes are used to update the additional signals.
 
-Unbound loops are supported through the generation of a complex state machine.
+\subsubsection{Simulations} \indent
 
-\subsubsection{Limitation}
+Because of the expensive time cost of synthesis (about 1'30 for simple VHDL sources) and the poor debugging aids on FPGAs, simulators provide a way to enhance the development process. Simulations can be run at several steps of the compilation process.
+They enable to investigate configuration's behaviour in an almost interactive way, giving access to inner signal impedances, and their evolution through time.\\
 
-Several projects of high level compiler only compile a very small subset of the original language to its obvious equivalent, using a main VHDL process (C to VHDL).
-These solutions only bridge the gap between the syntax (quiet a huge one) and leave to the programmer the understanding of how VHDL is actually compiled.
+Simulations are supported inside VHDL, with special statements (like \code{wait for 2ms}), operations or data types (floats) that are not supported by the synthesizer but that make the analysis easier. Values of inputs signals of the studied entity are planned with a separated VHDL file.
+
+
+
+
+
+\subsection{Existing high level compilers} \indent
+
+To bridge the gap between hardware and software programming and make the use of FPGAs accessible for non-specialists, high-level compilers have been developed that compile software programming languages to HDL descriptions \cite{bacon2013fpga} or net-lists \cite{iseli1995c++}.
+
+\subsubsection{Targeted execution environments} \indent
+
+Most of the high-level compilation tools target highly heterogeneous systems, aiming at providing a unique language to describe both software and hardware parts. These execution environments can be composed of multiple CPUs, GPUs, FPGAs or other specific hardware devices.\\
+
+Theses systems are often built around a main processor that organise the computation on helpers. OpenCL provides unified abstractions to program highly parallel applications, that have been adapt to target FPGAs \cite{czajkowski2012opencl}.
+
+
+\subsubsection{Xilinx's Vivado tool} \indent
+
+The Vivado Design Suite gathers tools to develop software applications with hardware parts. A C to HDL compiler is included that enables to describe hardware in C. The supported language is relatively wide and include general loop that are converted to a complex state machine.\\
+
+Because these hardware circuits are intended to be part of a larger system, they are constructed with additional interface signals that will enable to link components (\code {start}, \code {done}, \code {ready} and \code {idle} signals). 
+
+
+\subsubsection{Limitation} \indent
+
+
+In several high level compiler studies, the supported language was restricted to a very small and basic core of the original language. Process statements were use to convert easily C code to VHDL \cite{parkinson1994c} but such solutions only bridge the (huge) syntactical gap between C and VHDL.  \\
+
+Imperative languages were mainly used as sources (C, Java)
+Most of were deeply imperative languages
+In these studies, source languages are mainly low level software programmng languages (C,C++) and the supported subset 
+iteratif vs functional.
+
+High level compiler also tried to add as few elements as possible in the source language, and give few way to control precisely  the produced code.
 
 
 \section{The Whiley language and the compiler framework}
+\indent
 
-\subsection{The Whiley Language}
+The Whiley language is designed to provide an extended static checking. The strong type system is coupled with a support for specification that can be checked by a theorem prover.\\ 
 
-\subsection{The Whiley Intermediate Language (Wyil)}
+This succinct presentation of the Whiley language focuses on the aspects that were studied in this work, that is especially completely orthogonal to the specification and checking parts of the language. An exhaustive documentation can be found \href{http://www.whiley.org/}{here} \cite{WhileySpec}.
 
 
-\section{The WhileyToWHDL Compiler}
+\subsection{Overview}\indent
 
-\subsection{Code structure conversion}
-
-The global structure of the code is kept in a strait-forward manner :
+With a Python like syntax (with C-like comments), Whiley is both
 \begin{itemize}
-	\item Each Wyil file is converted to a unique VHDL source file
-	\item Each function of a file is converted to an entity and a corresponding architecture
+\item Oriented-object : Records and open records enable to define values with attributes and methods.
+\item Functional : First class functions are provided : functions (pure) or methods (can have side effects) can be used as values.
+\end{itemize}
+
+Specification is introduced through \whileyLine{requires}, \whileyLine{ensures} and \whileyLine{where} keywords. Here is a typical Whiley program that illustrates 
+
+\begin{lstlisting}[language=Whiley]
+function firstIndexOf(int[] t, int v) -> (int|null i)    // No pre-conditions
+ensures i is null || (t[i]==v && all  {k in 0 .. i | t[k]!=v}) // Post-
+ensures i is int || all {k in 0 .. |t| | t[k]!=v}:             //  conditions
+    int k = 0
+    while k < |t| 
+    where 0<=k && k<=|t|                // Loop
+    where all {j in 0 ..k | t[j]!=v}:   //   invariants
+        if t[k] == v:
+            return k
+        k = k + 1
+    return null
+\end{lstlisting}
+
+\subsection{Type system}
+
+\paragraph{Structural types} \pindent
+
+
+The Whiley language uses a structural type system : types are determined by their declaration instead of their identifiers. Two nominal types with different names can thus have the same values.\\
+
+In such a system, types can usefully be seen as a subset of the set of correct values $\val$ in language. Type operations can then be interpreted as they equivalent on sets. The sub-typing operator, that tells if a type is a sub-type of an other one, is define as the set inclusion.\\
+
+\begin{wrapfigure}[4]{r}{0.35\textwidth}
+	\vspace{-1cm}
+	\center
+	\begin{tikzpicture}[-latex, semithick , state/.style ={ellipse, top color = white, bottom color = #1!10, draw, black, text=black, minimum width = 1.8 cm, minimum height = 0.5 cm, align = left}]
+	%\scriptsize
+	
+	\node[state={c1515F0},align=center] (A) at (3,4) {any};
+	\node[state={c1515F0},align=center] (B) at (1.2,2.8) {null};
+	\node[state={c1515F0},align=center] (C) at (2.4,2) {byte};
+	\node[state={c1515F0},align=center] (D) at (3.6,2.8) {bool};
+	\node[state={c1515F0},align=center] (E) at (4.8,2) {int};
+	\node[state={c1515F0},align=center] (F) at (3,0.8) {void};
+	\path (A) edge [in=90, out=-160] (B);
+	\path (A) edge [in=90, out=-120] (C);
+	\path (A) edge [in=90, out=-60] (D);
+	\path (A) edge [in=90, out=-20] (E);
+	\path (B) edge [in=160, out=-90] (F);
+	\path (C) edge [in=120, out=-90] (F);
+	\path (D) edge [in=60, out=-90] (F);
+	\path (E) edge [in=20, out=-90] (F);
+	\normalsize
+	\end{tikzpicture}
+	\caption{Lattice of primitive types}
+\end{wrapfigure}
+
+New types are constructed using :
+
+\begin{itemize}
+	\item \textbf{Primitive types} : (non-exhaustive list) \\
+	\code {any} $=~\val$,\\
+	\code {null} $=~\{null\}$,~~ \code {bool} $=~\{true, false\}$,\\ \code {byte} $=~\{0,1\}^8$,~~ \code {int} $=~\mathbb Z$,\\
+	\code {void} $=~\emptyset$
+	\item \textbf{Constructed types} : Records, Arrays, References, Functions or Methods.
+	\item \textbf{Type operators} : Negation, intersection and union.
 \end{itemize}
 
 
-\subsection{Types compilation}
-\indent 
 
-Wyil files are composed of types and functions definitions. Because they are used in functions, The types are first compiled to their VHDL equivalent.
+\paragraph{Constrained type}\pindent
 
-\subsubsection{Primitive types}
+The syntax \lstinline[language=Whiley,basicstyle=\normalsize\ttfamily]{define nat as int where $ >= 0}  enables to define types using previously declared ones and adding to them some constraints on the possible values. The use of a value that does not meet constraints will result in a compile time error.
+
+
+
+
+
+\paragraph{Effective types} \pindent
+
+To improve convenience, union of types that share the same structure (records, arrays, ...) exposes this common structure to. For example, the union of records that all have a field \code f is an effective record containing a field \code f of type the union of type for this field in the records.
+
+%\paragraph{Functions or methods} \pindent
+
+%A distinction is made between function that cannot have any side-effects and methods that can. 
+
+\begin{wrapfigure}[8]{r}{0.45\textwidth}
+	\vspace{-.5cm}
+\begin{lstlisting}[language=Whiley]
+function toBool(int|bool c) -> bool:
+  if c is int:    // int|bool & int
+    return c != 0 //   c : int
+  else:           // int|bool & !int 
+    return c      //   c : bool
+\end{lstlisting}
+\end{wrapfigure}
+
+\subsection{Flow-typing}
 \indent
 
-Some Wyil primitive types can be compiled in an obvious way to VHDL type :
+The Whiley language provides flow-typing that enable a variable to hold different types through the code. 
+Type checking is introduced with the \code {is}operator. When used in a \code {if} statement, it refines the type of the checked variable one each branch, with enable to use them without cast. \\
+
+The type on each branch are constructed using negation and intersection operators. 
+
+
+\subsection{The Compiler Collection}
+\indent
+
+Whiley sources are first converted to Whiley Intermediate Language (Wyil) by the front-end compiler (wyc). Wyil bytecodes are then given to back-end compilers. \\
+
+Wyc handles lexing, parsing and type checking of Whiley sources. It also fully resolves names, giving each variable of function a unique identifier. 
+
+\begin{figure}[h]
+	\center
+	\begin{tikzpicture}[->, -latex, semithick , state/.style ={rectangle, top color = white, bottom color = processblue!20, draw, processblue, text=black, minimum width = 2.5 cm, minimum height = 0.5 cm, align = left}, stateB/.style ={ellipse, top color = white, bottom color = processred!20, draw, processred, text=black, minimum width = 1.8 cm, minimum height = 0.5 cm, align = left}]
+	\small
+	\node[stateB,align=center] (A) at (0,0) {Whiley Source \\ File};
+	\node[state,align=center] (B) at (3.4,0) {Wyc};
+	\node[stateB,align=center] (C) at (6.8,0) {Wyil Source \\ File};
+	\node[state,align=center] (D) at (10.2,0) {Java \\ Backend};
+	\node[stateB,align=center] (E) at (13.6,0) {Java\\ Bitecode};
+	\node[state,align=center] (F) at (10.2,-1.5) {VHDL \\ Backend};
+	\node[stateB,align=center] (G) at (13.6,-1.5) {VHDL Source \\ File};
+	\node[state,align=center] (H) at (10.2,1.5) {Theorem \\ Prover};
+	\draw (A) -- (B);
+	\draw (B) -- (C);
+	\draw (C) -- (D);
+	\draw (D) -- (E);
+	\draw (C) -- (F.west);
+	\draw (F) -- (G);
+	\draw (C) -- (H.west);
+
+	\normalsize
+	\end{tikzpicture}
+	\caption{The Compiler Collection}
+\end{figure}
+
+This structure greatly simplify the work of back-end compilers that have only to deal with well formed and typed programs. 
+
+
+
+
+
+
+
+\newpage
+\section{The WhileyToVHDL Compiler}\indent
+
+The WhileyToVHDL compiler is a plugin for the Whiley Compiler Collection that compiles Wyil bytecode to VHDL source files. It was construct without any modifications of the langage but keeping in mind that extensions could be proposed.
+
+\subsection{Overview}
+
+\paragraph{Compilation process}\pindent
+
+%\begin{wrapfigure}[20]{r}{0.35\textwidth}
+%	\vspace{-1cm}
+%	\center
+%	\begin{tikzpicture}[-latex, semithick , state/.style ={rectangle, top color = white, bottom color = #1!10, draw, black, text=black, minimum width = 1.8 cm, minimum height = 0.5 cm, align = left}]
+%	\small
+%	
+%	\node[state={c1515F0},align=center] (A) at (0,8) {Wyil Source \\ File};
+%	\node[state={cF0F015},align=center] (B) at (0,6.5){Data-flow graph \\ building};
+%	\node[state={cF0F015},align=center] (C) at (0,5) {Data-flow graph \\ optimizations};
+%	\node[state={cF0F015},align=center] (D) at (0,3.5) {VHDL code \\ production};
+%	\node[state={c1515F0},align=center] (E) at (0,2) {VHDL Source \\ File};
+%	\path (A) edge  (B);
+%	\path (B) edge  (C);
+%	\path (C) edge  (D);
+%	\path (D) edge  (E);
+%	\normalsize
+%	\end{tikzpicture}
+%	\caption{Compilation pipeline}
+%\end{wrapfigure}
+
+
+Because of the source and targeted languages, the compilation process has several specific traits :
 
 \begin{itemize}
-	\item \code{int} $\longrightarrow$ \code{signed(31 downto 0)} [Temporary ?]
-	\item \code{bool} $\longrightarrow$ \code{boolean}
-	\item \code{byte} $\longrightarrow$ \code{std\_logic\_vector(7 downto 0)}
+	\item It is only a back-end compiler : no need to handle type checking nor verifications, the input sources are supposed to be well formed and correct.
+	\item The conversion of a sequential code to a hardware description (intrinsically parallel) requires the use of a specific transformation pipeline.
 \end{itemize}
 
-The case of the \code Any type is special : it can't be represented with a finite number of primitive type so it is not supported.
+For each function, the compilation is achieved using the following steps :
 
-\subsubsection{Complex types}
-\indent
+\begin{figure}[h]
+	\center
+	\begin{tikzpicture}[-latex, semithick , state/.style ={rectangle, top color = white, bottom color = processblue!20, draw, processblue, text=black, minimum width = 2.5 cm, minimum height = 0.5 cm, align = left}, stateB/.style ={ellipse, top color = white, bottom color = processred!20, draw, processred, text=black, minimum width = 1.8 cm, minimum height = 0.5 cm, align = left}]
+	\small
+	\node[stateB,align=center] (A) at (0,0) {Wyil Source \\ File};
+	\node[state,align=center] (B) at (3.4,0) {Data-flow graph \\ building};
+	\node[state,align=center] (C) at (6.8,0) {Pipeline \\ building};
+	\node[state,align=center] (D) at (10.2,0) {VHDL code \\ production};
+	\node[stateB,align=center] (E) at (13.6,0) {VHDL Source \\ File};
+	\path (A) edge  (B);
+	\path (B) edge  (C);
+	\path (C) edge  (D);
+	\path (D) edge  (E);
+	\normalsize
+	\end{tikzpicture}
+	\caption{The compilation pipeline}
+\end{figure}
 
-Other types are handled with a recursive structure that contains named fields associated with types. A general type is thus represented by a tree with primitive types as leaves.
+\textbf{\textsl{Remark :}} Wyil files do not contain only function declarations. Nominal types can also be declared. They are pre-treated and stored for future use (See \hyperref[Types]{Types compilation}).
+
+\paragraph{Compilation units} \pindent
+
+The structure of Whiley files is preserved in the following way :
+\begin{itemize}
+	\item Each file is compile to a unique VHDL file
+	\item Each function is compile to a unique VHDL entity
+\end{itemize}
+
+\paragraph{Restrictions on the language}\pindent
+
+Only a small subset of the Whiley language is supported by the compiler. The limitations arise from two major reasons :
 
 \begin{itemize}
-	\item \textbf{\code Null and \code Void type} : It is represented with an empty compound type.
+	\item \textbf{The irrelevance regarding the targeted device} : Function references, floating points, ...
+	\item \textbf{The amount of time necessary to add some concepts} : Arrays, partial recursion support, ...
+\end{itemize}
+
+\paragraph{Data-flow graph}\pindent
+
+This graph describes how data are modified through series of statements. Every path on this graph shows a possible transformation chain of an entry. This representation exposes the fine-grained parallelism that was hidden by the sequential description of the computation \cite{cardoso2003compilation, tripp2007trident, putnam2008chimps}. \\
+
+
+
+To ensure a maximum use of this parallelism, the data-flow graph is built with VHDL values as atomic components. It is thus necessary to :
+
+\begin{itemize}
+	\item Convert the Whiley typed variables to VHDL ones, choosing a representation for the each type.
+	\item Build the data-flow graph from the functions body with the types constructed above.
+\end{itemize}
+
+\paragraph{VHDL generation}\pindent
+
+Owing to the fact that VHDL is a data-flow language, the compilation of data-flow graphs to VHDL sources is mainly a strait-forward translation of vertexes to VHDL concurrent statements. Process statements are only used to convert register vertexes. Signals are created at strategic locations, to avoid expressions duplication.
+
+
+
+\subsection{Types compilation}\indent
+\label{Types}
+
+The choice of representation for Whiley variables rely on the conversion of their type to a construction using VHDL types.
+
+\subsubsection{Purposes, difficulties and limitations}
+\indent
+
+
+Contrary to a classical CPU execution environments where variables are compiled to memory addresses or registers, VHDL signals represent a bench of wires. This simple fact has several severe consequences :
+
+\begin{itemize}
+	\item \textbf{Types must be finite} : When a value of type $T$ is expected, a only finite number of bits (wires) will be allocated for it and they must be enough to stored every possible value of type $T$. Whiley unbounded \code int are thus impossible to handle neither is \code any.
+	
+	\item \textbf{Type operations must be resolved} : Storing a value of type $T_1|T_2$ can't be achieved with a pointer on a value of type $T_1$ or $T_2$ and a check of the effective type at runtime, the representation of both types has to be contained in the representation of the union type, as well as a way to distinguish the effective type of the value.
+	
+	\item \textbf{Type representations should optimized} : Because of the space limitation on targeted devices, duplication of value must be avoid as much as possible. Storing the type \{int a\}$|$\{int b\} with two value of type int is not desirable.
+\end{itemize}
+
+\paragraph{Type representation}~\\\indent
+
+When feasible, a Whiley type will be converted to a set of VHDL types that handles every possible values of this type. To make the processing easier and the produced code clearer, the different components of a type representation are organized in a tree. It also enables to easily create signals with unique names.
+The complete discussion about the choices of theses representation can be find \hyperref[Repr]{bellow}.
+
+
+\begin{figure}[H]
+	\centering
+	\small
+	\subfloat[\code {\{bool a, int b\}}]{
+		\begin{tikzpicture}
+	
+		
+		\node[record] (A) at (3,-.4) {\code{\{\}}};
+		\node[primitive] (AA) at (5,-.6) {\code {a : bool}};
+		\node[primitive] (AB) at (5,-1.2) {\code {b : int}};
+		
+		\path (A.east) edge [out=-0, in=180] (AA.west);
+		\path (A.east) edge [out=-0, in=180] (AB.west);
+		
+		\end{tikzpicture}
+	}
+	\hspace{.77cm}
+	\subfloat[\code {bool|int}]{
+		\begin{tikzpicture}
+		
+		\node[record] (A) at (3,-.4) {\code|};
+		\node[primitive] (AA) at (5,-.6) {\code {opt0}};
+		\node[primitive] (AAA) at (8,-.8) {\code {has : bool}};
+		\node[primitive] (AAB) at (8,-1.4) {\code {val : bool}};
+		\node[primitive] (AB) at (5,-1.8) {\code {opt1}};
+		\node[primitive] (ABA) at (8,-2) {\code {has : bool}};
+		\node[primitive] (ABB) at (8,-2.6) {\code {has : int}};
+		
+		\path (A.east) edge [out=-0, in=180] (AA.west);
+		\path (AA.east) edge [out=-0, in=180] (AAA.west);
+		\path (AA.east) edge [out=-0, in=180] (AAB.west);
+		\path (A.east) edge [out=-0, in=180] (AB.west);
+		\path (AB.east) edge [out=-0, in=180] (ABA.west);
+		\path (AB.east) edge [out=-0, in=180] (ABB.west);
+		
+		\end{tikzpicture}
+	}
+	\normalsize
+	\caption{Example of simple type representations}
+\end{figure}
+
+\textbf{\textsl{Remark :}} The case of Whiley's \code int type is resolved by fixing the size of integer (32 bits signed integers). To preserve Whiley semantic, an analysis of constraints of integer types could replace this solution, that would enable to adjust precisely the size of integers.
+
+
+
+
+\paragraph{Type resolution}~pindent
+
+Because some type constructions can't be easily represented with VHDL types (intersections, negations), types must be simplify when feasible to equivalent forms free of unsupported operations. \\
+
+Such complex types arise when using flow typing : the types of variables on each branch are defined with intersections and negations. Because the compiler simplify only simple cases, a deeper analysis was built to ensure the  widest support of flow typing.
+
+
+\subsubsection{Type analysis}
+\indent
+
+
+The simplification of type expressions is based on the elimination of redundant components in unions or intersections. To detect them, types must be compared. Types are first converted to a canonical form that makes the comparison easier.\\
+
+
+In the following study,
+\begin{itemize}
+	\item $\val$ is the set of acceptable Whiley typed values (closed by Cartesian product)
+	\item $\typ = \mathcal P (\val)$ is the set of types (closed by Cartesian product)
+	\item $\lea = $\{any, bool, byte, int, null, void\} is the set of primitive types
+	\item For $T_1,T_2 \in \typ$, $~~T1|T2~=~T1 \cup T2$, $~~T1\&T2~=~T1 \cap T2$, $~~\{T1~a,~T2~b\}~=~T1 \times T2$, $~~!T_1~=~\val \setminus T_1$
+\end{itemize}
+
+\paragraph{The canonical form}~\\\indent
+
+We denote wit $\mathcal S$ the minimum set such as
+\[ \lea \subset \mathcal S, ~~~ \forall S_1,\ldots,S_n \in \mathcal S,~  S_1 \times \ldots \times S_n \in \mathcal S\]
+
+The canonical form is define as :
+\[
+\bigcup_i \left(\left( \bigcap_j S_{i,j}\right) \cap \left( \bigcap_k \left(\val \setminus S_{i,k}\right) \right)\right), ~~ S_{i,j} \in \mathcal S, ~ S_{i,k} \in \mathcal S
+\]
+
+
+It is built using the classical set equations :
+\[
+\begin{array}{rcl}
+	\overline{\bigcup _k T_k} & = & \bigcap _k \overline{T_k} \\
+	\overline{\bigcap _k T_k} & = & \bigcup _k \overline{T_k} \\
+	\bigcap _{i \in  [ \! [ 1,n ] \! ] } \bigcup _{j \in J_i} T_{i,j} & = & \bigcup _{I \in J_1\times\ldots\times J_n} \bigcap _i T_{i, I_i}
+\end{array}
+\]
+
+The case of records (Cartesian products) needs more care :
+\[
+T_1 \times (\overline{T_2}) ~ = ~ \left(T_1 \times \val \right) \cap \left( \overline{T_1 \times T_2} \right)
+\]
+
+
+\begin{figure}[h]
+	\centering
+	\begin{tabular}{|c|c|c|}
+	\hline
+	int & int$|$bool & \{int$|$bool~a,~!byte~b\} \\
+	\hline
+	$\cup(\cap($int$))$ & $\cup(\cap($int$),~\cap($int$))$ & 
+	\begin{tabular}{lll}
+		$\cup($ & $\cap($\{int a, any b\}, & !\{int a, byte b\}$),$ \\
+		& $\cap($\{bool a, any b\}, & !\{bool a, byte b\}$))$ 
+	\end{tabular} \\
+	\hline
+	\end{tabular}
+	\caption{Some canonical form examples}
+\end{figure}
+
+This form is not unique.
+
+
+\begin{wrapfigure}[16]{r}{0.45\textwidth}
+\vspace{-1cm}
+\center
+\begin{tikzpicture}[-latex, semithick , state/.style ={ellipse, top color = white, bottom color = #1!10, draw, black, text=black, minimum width = 1.8 cm, minimum height = 0.5 cm, align = left}]
+\scriptsize
+		
+\node[state={c15F0F0},align=center] (X) at (1.7,4) {Greater \& \\ Disjointed\\$\{\mathcal P_2, \mathcal P_3\}$};
+\node[state={cF0F0F0},align=center] (Y) at (4,5.5) {Equal \& \\ Disjointed\\$\{\mathcal P_1, \mathcal P_2, \mathcal P_3\}$};
+\node[state={cF015F0},align=center] (Z) at (6.3,4) {Lesser \& \\ Disjointed\\$\{\mathcal P_1, \mathcal P_3\}$};
+
+\node[state={c1515F0},align=center] (A) at (4,2.5) {Disjointed\\$\{\mathcal P_3\}$};
+\node[state={cF0F015},align=center] (B) at (4,4) {Equal\\$\{\mathcal P_1, \mathcal P_2\}$};
+\node[state={c15F015},align=center] (C) at (1.7,2.5) {Greater\\$\{\mathcal P_2\}$};
+\node[state={cF01515},align=center] (D) at (6.3,2.5) {Lesser\\$\{\mathcal P_1\}$};
+\node[state={c151515},align=center] (E) at (4,1) {Unkown\\$\{\}$};
+\path (X) edge  (C);
+\path (Y) edge  (B);
+\path (Y) edge  (X);
+\path (Y) edge  (Z);
+\path (Z) edge  (D);
+\path (X) edge  (A);
+\path (Z) edge  (A);
+\path (A) edge  (E);
+\path (B) edge  (C);
+\path (B) edge  (D);
+\path (C) edge  (E);
+\path (D) edge  (E);
+\normalsize
+\end{tikzpicture}
+\caption{Lattice of comparison results}
+\end{wrapfigure}
+
+\paragraph{Type comparison}~\\\indent
+
+
+The implemented comparison between $T_14$ and $T_2$ is achieved trying to check the following properties :
+\begin{itemize}
+\item $\mathcal P_1$ : $T_1 \subset T_2$
+\item $\mathcal P_2$ : $T_2 \subset T_1$
+\item $\mathcal P_3$ : $T_1 \cap T_2 = \emptyset$
+\end{itemize}
+
+Theses properties can independently be effective or not. (If the three properties are true, both types are necessarily empty)
+
+
+A result of comparison is the set of properties that are known to be true. The lattice of comparison results can thus be seen as a 3-dimensional cube.\\
+
+
+The comparison of two types is computed in the following way :
+\begin{itemize}
+	\item If one of the types is a primitive type, the result is well defined (Equal if they are the same, included if one of them is \code{any} and disjointed in the remaining cases). 
+	\item If both of them are constructed types, their components are compared and the result is build using some merging rules.
+\end{itemize}
+
+
+%
+%\begin{figure}
+%	\begin{tabular}{}
+%		content...
+%	\end{tabular}}
+%	\caption {The union rule}
+%\end{figure}
+
+
+
+
+
+
+
+
+
+
+To keep more information during comparison, a fourth dimension could be added, corresponding to the property $\mathcal P_4$ : $T_1 \cup T_2 = \val$.\\
+
+%
+%In the following description, $T_1,~T_2,~T_3,~T_4$ denote types and $o,~o_1,~o_2$ comparison results.\\
+%
+%This comparison result between two types $T_1$ and $T_2$ will be denoted $T_1/T_2$. The relation $o_1 \trianglelefteq o_2$ on $\ord$ intuitively means that the order $o_1$ is \textit{more} precise than $o_2$. \\
+%
+%The comparison is built using a structural induction : the comparison results are known for primitive types, and built type are compared using the following functions :
+%
+%\begin{itemize}
+%\item \textbf{Opposite} ($Opp$) : 
+%\[
+%\dfrac{T_1}{T_2} \trianglelefteq o \implies \dfrac{T_2}{T_1} \trianglelefteq Opp(o)
+%\]
+%\item \textbf{Negation} ($Neg$) :
+%\[
+%\dfrac{T_1}{T_2} \trianglelefteq o \implies \dfrac{!T_1}{!T_2} \trianglelefteq Neg(o)
+%\]
+%\item \textbf{Semi-negation} ($Sng$) :
+%\[
+%\dfrac{T_1}{T_2} \trianglelefteq o \implies \dfrac{!T_1}{T_2} \trianglelefteq Sng(o)
+%\]
+%\item \textbf{Conjunction} ($Con$) :
+%\[
+%\dfrac{T_1}{T_2} \trianglelefteq o_1, ~ \dfrac{T_3}{T_4} \trianglelefteq o_2,~
+%\left\lbrace
+%\begin{array}{lll}
+%T_1\cap T_3 & = & \varnothing\\
+%T_2\cap T_4 & = & \varnothing
+%\end{array}\right.  \implies \dfrac{T_1 | T_2}{T_3 | T_4} \trianglelefteq Con(o_1, o_2)
+%\]
+%\item \textbf{Union} ($Uni$) :
+%\[
+%\dfrac{T_1}{T_3} \trianglelefteq o_1, ~ \dfrac{T_2}{T_3} \trianglelefteq o_2 \implies \dfrac{T_1|T_2}{T_3} \trianglelefteq Uni(o_1, o_2)
+%\]
+%\item \textbf{Intersection} ($Int$) :
+%\[
+%\dfrac{T_1}{T_3} \trianglelefteq o_1, ~ \dfrac{T_2}{T_3} \trianglelefteq o_2 \implies \dfrac{T_1\&T_2}{T_3} \trianglelefteq Int(o_1, o_2)
+%\]
+%\item \textbf{Precision} ($Pre$) :
+%\[
+%\dfrac{T_1}{T_2} \trianglelefteq o_1, ~ \dfrac{T_1}{T_2} \trianglelefteq o_2 \implies \dfrac{T_1\&T_2}{T_3} \trianglelefteq Pre(o_1, o_2), \left\lbrace
+%\begin{array}{lll}
+%Pre(o_1, o_2) & \trianglelefteq & o_1\\
+%Pre(o_1, o_2) & \trianglelefteq & o_2
+%\end{array}\right.
+%\]
+%\end{itemize}
+%
+%The conjunction rule is used to compare records were each field are independent of the others.
+%
+%Some of these relations seems redundant, but it appears that this has to be carefully studied. In the case of the 3 dimensions comparison lattice, the following results can be observed :
+%
+%\[
+%\forall o, ~ \left\lbrace \begin{array}{lll}
+%Neg(o) & \trianglelefteq & Sng\left(Opp\left(Sng\left(Opp\left(o\right)\right)\right)\right) \\
+%Neg(o) & \trianglelefteq & Opp\left(Sng\left(Opp\left(Sng\left(o\right)\right)\right)\right) 
+%\end{array}\right.
+%\]
+%\[
+%\left\lbrace \begin{array}{llllll}
+%Neg(Greater) & = & Lesser, & Sng\left(Opp\left(Sng\left(Opp\left(Greater\right)\right)\right)\right) & = & Unknown \\
+%Neg(Lesser) & = & Greater, &Opp\left(Sng\left(Opp\left(Sng\left(Lesser\right)\right)\right)\right) & = & Unknown \\
+%\end{array}\right.
+%\]
+%
+%
+%The lesser accuracy of the alternative expressions is due to the fact that $Sng(Lesser) = Unknown$.
+%The complete precision can be recovered using :
+%\[
+%\forall o, ~ Neg(o) ~ = ~ Pre\left( Sng\left(Opp\left(Sng\left(Opp\left(o\right)\right)\right)\right), Opp\left(Sng\left(Opp\left(Sng\left(o\right)\right)\right)\right) \right)
+%\]
+%
+%
+%To improve precision, the default comparison of $T_1$ against $T_2$ is computed with
+%\[
+%\Dfrac{T_1}{T_2} ~ = ~ Pre\left(\dfrac{T_1}{T_2}, Opp\left(\dfrac{T_2}{T_1}\right)\right)
+%\]
+
+
+\textbf{\textit{Remark}} : An other algorithm was proposed by D. J. Pearce \cite{SubTyping} to build the subtype operator, based on computing the property $T_1 \cap T_2 ~=~ \emptyset$ ($\mathcal P_3$). A similar canonical form is used to ensure this operator can be constructed. Other comparison result can be then implemented using it :
+\[
+	T_1 \subset T_2 ~\Leftrightarrow~ T_1 \cap (!T_2) = \emptyset
+\]
+
+
+\paragraph{Type simplification} ~\\\indent
+
+Using the described comparison, types are simplify in the following manner :
+
+\begin{itemize}
+	\item If an option of a union type is a subtype of an other, it is removed from the union.
+	\item If an option of a intersection super type is greater than an other, it is removed from the intersection.
+	\item Union or intersection with only one option are converted to this unique component.
+\end{itemize}
+
+
+%
+%The comparison is asymmetrical : 
+%
+%\code {int|bool / (!int)\&(!bool)}
+%
+%\code {int|bool / (!int)\&(!bool)}
+%\begin{figure}[h]
+%\begin{tabular}{ccc}
+%\begin{tikzpicture}[-latex, semithick , state/.style ={rectangle, top color = white, bottom color = processred!20, draw, processblue, text=blue, minimum height = 0.5 cm, align = left}, stateB/.style ={circle, top color = white, bottom color = processred!5, draw, processblue, text=blue, minimum height = 0.5 cm, align = left}]
+%\small
+%		
+%\node[state,align=center] (A) at (2,7) {$\dfrac{(!int)\&(!bool)}{int|bool}$};
+%\node[state,align=center] (AA) at (0,5.5) {$\dfrac{!int}{int|bool}$};
+%\node[state,align=center] (AB) at (4,5.5) {$\dfrac{!bool}{int|bool}$};
+%\node[state,align=center] (AAA) at (-1,4) {$\dfrac{!int}{int}$};
+%\node[state,align=center] (AAB) at (1,4) {$\dfrac{!int}{bool}$};
+%\node[state,align=center] (ABA) at (3,4) {$\dfrac{!bool}{int}$};
+%\node[state,align=center] (ABB) at (5,4) {$\dfrac{!bool}{bool}$};
+%
+%\node at (0,2.5) {$|$};
+%\node at (4,2.5) {$|$};
+%\node at (2,1.5) {$\&$};
+%
+%\node[stateB,align=center] (B) at (2,0.5) {$?$};
+%\node[stateB,align=center] (BA) at (0,1.5) {$?$};
+%\node[stateB,align=center] (BB) at (4,1.5) {$?$};
+%\node[stateB,align=center] (BAA) at (-1,2.5) {$\bowtie$};
+%\node[stateB,align=center] (BAB) at (1,2.5) {$?$};
+%\node[stateB,align=center] (BBA) at (3,2.5) {$?$};
+%\node[stateB,align=center] (BBB) at (5,2.5) {$\bowtie$};
+%
+%\path (A) edge  (AA);
+%\path (A) edge  (AB);
+%\path (AA) edge  (AAA);
+%\path (AA) edge  (AAB);
+%\path (AB) edge  (ABA);
+%\path (AB) edge  (ABB);
+%
+%\path (AAA) edge  (BAA);
+%\path (AAB) edge  (BAB);
+%\path (ABA) edge  (BBA);
+%\path (ABB) edge  (BBB);
+%
+%\path (BA) edge  (B);
+%\path (BB) edge  (B);
+%\path (BAA) edge  (BA);
+%\path (BAB) edge  (BA);
+%\path (BBA) edge  (BB);
+%\path (BBB) edge  (BB);
+%
+%\normalsize
+%\end{tikzpicture}
+%&~~&
+%\begin{tikzpicture}[-latex, semithick , state/.style ={rectangle, top color = white, bottom color = processred!20, draw, processblue, text=blue, minimum height = 0.5 cm, align = left}, stateB/.style ={circle, top color = white, bottom color = processred!20, draw, processblue, text=black, minimum height = 0.5 cm, align = left}]
+%\small
+%		
+%\node[state,align=center] (A) at (2,7) {$\dfrac{int|bool}{(!int)\&(!bool)}$};
+%\node[state,align=center] (AA) at (0,5.5) {$\dfrac{int}{(!int)\&(!bool)}$};
+%\node[state,align=center] (AB) at (4,5.5) {$\dfrac{bool}{(!int)\&(!bool)}$};
+%\node[state,align=center] (AAA) at (-1,4) {$\dfrac{int}{!int}$};
+%\node[state,align=center] (AAB) at (1,4) {$\dfrac{int}{!bool}$};
+%\node[state,align=center] (ABA) at (3,4) {$\dfrac{bool}{!int}$};
+%\node[state,align=center] (ABB) at (5,4) {$\dfrac{bool}{!bool}$};
+%
+%\node at (0,2.5) {$\&$};
+%\node at (4,2.5) {$\&$};
+%\node at (2,1.5) {$|$};
+%
+%\node[stateB,align=center] (B) at (2,0.5) {$\bowtie$};
+%\node[stateB,align=center] (BA) at (0,1.5) {$\bowtie$};
+%\node[stateB,align=center] (BB) at (4,1.5) {$\bowtie$};
+%\node[stateB,align=center] (BAA) at (-1,2.5) {$\bowtie$};
+%\node[stateB,align=center] (BAB) at (1,2.5) {$?$};
+%\node[stateB,align=center] (BBA) at (3,2.5) {$?$};
+%\node[stateB,align=center] (BBB) at (5,2.5) {$\bowtie$};
+%
+%\path (A) edge  (AA);
+%\path (A) edge  (AB);
+%\path (AA) edge  (AAA);
+%\path (AA) edge  (AAB);
+%\path (AB) edge  (ABA);
+%\path (AB) edge  (ABB);
+%
+%\path (AAA) edge  (BAA);
+%\path (AAB) edge  (BAB);
+%\path (ABA) edge  (BBA);
+%\path (ABB) edge  (BBB);
+%
+%\path (BA) edge  (B);
+%\path (BB) edge  (B);
+%\path (BAA) edge  (BA);
+%\path (BAB) edge  (BA);
+%\path (BBA) edge  (BB);
+%\path (BBB) edge  (BB);
+%
+%\normalsize
+%\end{tikzpicture}
+%\end{tabular}
+%\end{figure}
+
+
+
+\subsubsection{Type representation} \indent
+\label{Repr}
+
+Once the types have been simplified, if they do not contain any intersection, negation or infinite types, they are converted to a tree of VHDL type that will handle every possible value of that type. 
+
+\paragraph{Primitive types}~\\\indent
+
+The leaves of this tree are the VHDL types that can represent a Whiley type in a obvious manner. They are drawn in red on the following diagrams.
+
+\begin{itemize}
+	\item \code{int} are represented with \code{signed(31 downto 0)}
+	\item \code{bool} are represented with \code{boolean}
+	\item \code{byte} are represented with \code{std\_logic\_vector(7 downto 0)}
+\end{itemize}
+
+\paragraph{Compound types}~\\\indent
+
+
+To build the other types, several kind of inner nodes are provided to ensure an easy compilation of related operations :
+
+\newlength{\pict}
+\setlength{\pict}{.22\textwidth}
+
+\begin{itemize}
 	\item[] 
-	\begin{minipage}[b]{.8\textwidth}
-		\vspace{-.01cm}
-		\begin{wrapfigure}{r}{0.4\textwidth}
-			\begin{tikzpicture}[-latex, semithick , state/.style ={rectangle, top color = white, bottom color = processblue!20, draw, processblue, text=blue, minimum width = 4.5 cm, minimum height = 0.5 cm}]
+	\begin{minipage}[b]{.95\textwidth}
+		%\vspace{-.01cm}
+		\begin{wrapfigure}{r}{\pict}
+			\begin{tikzpicture}
 			\small
 			
-			\node[rectangle ,top color =white , bottom color = processred!20 ,
-			draw,processred , text=red , minimum width =1 cm] (A) at (-2.5,-0.2) {$*$};
+			\node[root] (A) at (0,0) {$T$};
 			
-			\node[state] (B) at (1,-1) {\_a : signed(31 downto 0)};
-			\node[state] (C) at (1,-1.6) {\_b : boolean};
+			\node[primitive] (B) at (2,-.4) {a : $T_1$};
+			\node[primitive] (C) at (2,-1) {b : $T_2$};
 			\path (A.south) edge [out=-90, in=180] (B.west);
 			\path (A.south) edge [out=-90, in=180] (C.west);
 			\normalsize
 			\end{tikzpicture}
 		\end{wrapfigure}
-		~\vspace{.01cm}
-		\item \textbf{Record types} : The root of the type tree contains the fields of the record type as children.
-		
+		~%\vspace{.01cm}
+		\item \textbf{Record nodes} : Each field is stored in a sub tree labelled with its name.
 		\begin{flushright}
-			Type \code{\{int a, bool b\}}
+			Type $T$ : {\{$T_1$ a, $T_2$ b\}}
 		\end{flushright}
 	\end{minipage} 
+	
 	\item[] 
-		\begin{minipage}[H]{.8\textwidth}
-			\vspace{-.02cm}
-			\begin{wrapfigure}{r}{0.4\textwidth}
-				\begin{tikzpicture}[-latex, semithick , state/.style ={rectangle, top color = white, bottom color = processblue!20, draw, processblue, text=blue, minimum width = 4.5 cm, minimum height = 0.5 cm, align = left}]
-					\small
-		
-					\node[rectangle, top color = white, bottom color = processred!20, draw,processred, text=red, minimum width = 1 cm] (A) at (-2.5,-0.2) {$*$};
-		
-					\node[state] (B) at (1,-1) {\_vl\_t0 : signed(31 downto 0)};
-					\node[state] (C) at (1,-1.6) {\_is\_t0 : boolean};
-					\node[state] (D) at (1,-2.2) {\_vl\_t1 : std\_logic(7 downto 0)};
-					\node[state] (E) at (1,-2.8) {\_is\_t1 : boolean};
-					\path (A.south) edge [out=-90, in=180] (B.west);
-					\path (A.south) edge [out=-90, in=180] (C.west);
-					\path (A.south) edge [out=-90, in=180] (D.west);
-					\path (A.south) edge [out=-90, in=180] (E.west);
-					\normalsize
-				\end{tikzpicture}
-			\end{wrapfigure}
-			~\vspace{.02cm}
-			\item \textbf{Union types} : Each type of the disjunction is stored with an additional boolean value that indicate whether it is the current type or not. This non space optimal choice enables easy flow typing.
+	\begin{minipage}[b]{.95\textwidth}
+		%\vspace{-.01cm}
+		\begin{wrapfigure}{r}{\pict}
+			\begin{tikzpicture}
+			\small
+			
+			\node[root] (A) at (0,0) {$T$};
+			
+			\node[leaf] (B) at (2,-.4) {has : bool};
+			\node[primitive] (C) at (2,-1) {val : $T_1$};
+			\path (A.south) edge [out=-90, in=180] (B.west);
+			\path (A.south) edge [out=-90, in=180] (C.west);
+			\normalsize
+			\end{tikzpicture}
+		\end{wrapfigure}
+		~%\vspace{.01cm}
+		\item \textbf{Option nodes} : Add a boolean flag to a type, indicating if the containing value is meaningful or not. Theses nodes are used by other inner nodes.
+		\begin{flushright}
+			Type $T$ : $T_1?$
+		\end{flushright}
+	\end{minipage} 
+	
+	\item[] 
+	\begin{minipage}[b]{.95\textwidth}
+		%\vspace{-.01cm}
+		\begin{wrapfigure}{r}{\pict}
+			\begin{tikzpicture}
+			\small
+			
+			\node[root] (A) at (0,0) {$T$};
 
-			\begin{flushright}
-			Type \code{int|byte}
-			\end{flushright}
-		\end{minipage}
+			\node[primitive] (B) at (2,-.4) {opt0 : $T_1?$};
+			\node[primitive] (C) at (2,-1) {opt1 : $T_2?$};
+			\path (A.south) edge [out=-90, in=180] (B.west);
+			\path (A.south) edge [out=-90, in=180] (C.west);
+			\normalsize
+			\end{tikzpicture}
+		\end{wrapfigure}
+		~%\vspace{.01cm} 
+		\item \textbf{Primitive union nodes} : In the case were every component is a primitive type, they are stored in an option type. This representation is not the most space efficient but enables an easy support of flow typing (see \hyperref[FlowT]{Flow typing}).
+		\begin{flushright}
+			Type $T$ : $T_1|_pT_2$
+		\end{flushright}
+	\end{minipage} 
+	
+	\item[] 
+	\begin{minipage}[b]{.95\textwidth}
+		%\vspace{-.01cm}
+		\begin{wrapfigure}{r}{\pict}
+			\begin{tikzpicture}
+			\small
+			
+			\node[root] (A) at (0,0) {$T$};
+			
+			\node[primitive,minimum width = 2.8cm] (B) at (2,-.4) {sha : $\{T_1|_pT_2~a\}$};
+			\node[primitive,minimum width = 2.8cm] (C) at (2,-1) {spe : $\{T_3?~b\}$};
+			\path (A.south) edge [out=-90, in=180] (B.west);
+			\path (A.south) edge [out=-90, in=180] (C.west);
+			\normalsize
+			\end{tikzpicture}
+		\end{wrapfigure}
+		~%\vspace{.01cm}
+		\item \textbf{Record union nodes} : Separate the fields that are common to all union's records from the one that are not present in every option. This representation enable an easy support of effective records.
+		\begin{flushright}
+			Type $T$ : $\{T_1~a\}|_r\{T_2 ~a,~T_3~b\}$
+		\end{flushright}
+	\end{minipage} 
+	
+	\item[] 
+	\begin{minipage}[b]{.95\textwidth}
+		%\vspace{-.01cm}
+		\begin{wrapfigure}{r}{\pict}
+			\begin{tikzpicture}
+			\small
+			
+			\node[root] (A) at (0,0) {$T$};
+			
+			\node[primitive,minimum width = 2.8cm] (B) at (2,-.4) {pri : $P_1|_pP_2$};
+			\node[primitive,minimum width = 2.8cm] (C) at (2,-1) {rec : $R_1|_rR_2 ~?$};
+			\path (A.south) edge [out=-90, in=180] (B.west);
+			\path (A.south) edge [out=-90, in=180] (C.west);
+			\normalsize
+			\end{tikzpicture}
+		\end{wrapfigure}
+		~%\vspace{.01cm}
+		\item \textbf{General union nodes} : Store a general union, separating records options from primitive ones.
+		\begin{flushright}
+			Type $T$ : $P_1|P_2|R_1|R_2$
+		\end{flushright}
+	\end{minipage} 
 \end{itemize}
 
 
-\subsection{Functions compilation}
-\indent
-
-The functions compilation process consists in building data-flow graphs, optimizing them and converting them toward VHDL code.
-
-\subsubsection{Data-flow graph}
-\indent
-
-Data-flow graphs expose the fine grained parallelism that occurs inside each function. They seem thus unavoidable to take advantage of the FPGA's structure. They describe the succession of operations that will transform the input data to the outputs.
+Some primitive types are not straightforwardly convertible to VHDL values :
 
 
-Data-flow graphs are built at the signal level, which means that values of complex types are separated is they atomic components, because it reveals more parallelism and it corresponds to the VHDL code that will be produced.
+\begin{itemize}
+	\item The type \code {any} is not convertible.
+	\item The type \code {null} is converted to an empty record : the only value of type \code Null is null, so no bits are needed to store it. This type is useful when part of a union (\code {int|null}), and the boolean of the option is the holding the information.
+	\item The type \code {void} is not convertible because it contains no values.
+\end{itemize}
 
 
 \begin{figure}[h]
 	\centering
-	\subfloat[Whiley code]{\adjustbox{valign=b}{\lstinputlisting[language=Octave, numbers=left, linewidth=.35\textwidth]{dfg.whiley}}}
-	\qquad
-	\subfloat[Data-flow graph]{\adjustbox{valign=b}{\includegraphics[scale=.16]{dfg.png}}}
-	\caption{Example of data-flow graph}
+	\begin{tikzpicture}[-latex, semithick , state/.style ={rectangle, top color = white, bottom color = processblue!20, draw, processblue, text=blue, minimum width = 4.5 cm, minimum height = 0.5 cm}]
+	\small
+	
+	\node[rectangle ,top color =white , bottom color = processblue!20 ,
+	draw,processblue , text=black , minimum width =1 cm] (A) at (-.5,0) {$T$};
+	
+	\node[primitive] (B) at (2,-.2) {pri};
+	\node[leaf] (BA) at (4.5,-.4) {has : bool};
+	\node[primitive] (C) at (2,-.8) {rec};
+	\node[primitive] (CA) at (4.5,-1) {sha};
+	\node[primitive] (CAA) at (7,-1.2) {b};
+	\node[primitive] (CAAA) at (9.5,-1.4) {opt0};
+	\node[leaf] (CAAAA) at (12,-1.6) {has : bool};
+	\node[leaf] (CAAAB) at (12,-2.2) {val : byte};
+	\node[primitive] (CAAB) at (9.5,-2.6) {opt1};
+	\node[leaf] (CAABA) at (12,-2.8) {has : bool};
+	\node[leaf] (CAABB) at (12,-3.4) {val : int};
+	\node[primitive] (CB) at (4.5,-3) {spe};
+	\node[primitive] (CBA) at (7,-3.2) {a};
+	\node[leaf] (CBAA) at (9.5,-3.4) {has : bool};
+	\node[leaf] (CBAB) at (9.5,-4) {val : int};
+	
+	\path (A.east) edge [out=-0, in=180] (B.west);
+	\path (B.east) edge [out=-0, in=180] (BA.west);
+	\path (A.east) edge [out=-0, in=180] (C.west);
+	\path (C.east) edge [out=-0, in=180] (CA.west);
+	\path (CA.east) edge [out=-0, in=180] (CAA.west);
+	\path (CAA.east) edge [out=-0, in=180] (CAAA.west);
+	\path (CAAA.east) edge [out=-0, in=180] (CAAAA.west);
+	\path (CAAA.east) edge [out=-0, in=180] (CAAAB.west);
+	\path (CAA.east) edge [out=-0, in=180] (CAAB.west);
+	\path (CAAB.east) edge [out=-0, in=180] (CAABA.west);
+	\path (CAAB.east) edge [out=-0, in=180] (CAABB.west);
+	\path (C.east) edge [out=-0, in=180] (CB.west);
+	\path (CB.east) edge [out=-0, in=180] (CBA.west);
+	\path (CBA.east) edge [out=-0, in=180] (CBAA.west);
+	\path (CBA.east) edge [out=-0, in=180] (CBAB.west);
+	\normalsize
+	\end{tikzpicture}
+	\caption{Representation of type $T$ : \{int a, byte b\}$|$\{int b\}$|$null }
 \end{figure}
 
 
-This graph is made of two types of nodes : 
+\textbf{\textsl{Remark :}} Recursive types such as trees are not convertible as they describe values of unknown and unbound size.
+
+
+
+
+
+\subsection{Building the data-flow graph}
+\indent
+
+The building of the data-flow graph transforms the function body to a graph exposing the paths data can follow during the execution. 
+
+
+\subsubsection{Vertexes}
+\indent
+
+Because Whiley types are converted to a tree of VHLD types, each Whiley variable is associated with a tree of data-flow graph vertexes that represent its current state. \\
+
+This graph is made of two types of vertexes : 
 \begin{itemize}
-	\item \textbf{Value nodes} : represent constants or inputs/outputs (of the function or the called functions). They have only one source.
-	\item \textbf{Operation nodes} : represent operations, with their operands as sources.
+	\item \textbf{Symbolic vertexes} : represent constants or inputs/outputs (of the function or the called functions). They have at most one source.
+	\item \textbf{Operation vertexes} : represent operations, with their operands as sources. Complex operations are compiled to equivalent set of basic operations (see the \hyperref[FlowT]{\code {is} operator}).
 \end{itemize}
 
 
-To improve the readability of the produced VHDL code, the Whiley variables' name is kept as an arrow label. 
 
-
-\subsubsection{Merging returns}
-\indent
-
-A extra care has to be taken with the management of returns : whereas several return statements can be placed anywhere in the source code (in any block of code), VHDL entities define their interface, and each output signal has to be compute from only one expression.
-Returns thus need to be gathered as if they were stored in a special variable.
+When meaningful, vertexes are typed with a VHDL type. Only these kind of vertexes can then be compiled toward VHDL signals.
 
 
 
-\newbox\caseA
-\begin{lrbox}{\caseA}
-	\begin{minipage}[t]{.45\textwidth}
-	\begin{lstlisting}[language=Octave, numbers=right]
-function e(int c) -> int|bool:
-    int|bool a = c
-    if c == 0:
-      a = false
-    return a
-	\end{lstlisting}
-\end{minipage}
-\end{lrbox}
+\subsubsection{Compiling the function body} \indent
+
+To compile a function body, a map of Whiley variables to the current tree of node representing them is stored and initialized with input nodes for each argument. Body's statements are then successively processed to construct the graph. Some worth-mentioning statements are discuss below.
+
+\paragraph{Variable assignments}\pindent
 
 
-\newbox\caseB
-\begin{lrbox}{\caseB}
-	\begin{minipage}[t]{.45\textwidth}
-		\begin{lstlisting}[language=Octave, frame=single]
-function e(int c) -> int|bool:
-    if c == 0:
-      return false
-    return c
-  
-		\end{lstlisting}
+The compilation of variable assignments modifies the tree of vertexes that represents the assigned variable. It requires three steps :
+
+\begin{enumerate}
+	\item \textbf{Building of the right hand side} : A tree representing the \fcolorbox{processred}{processred!10}{new value} is built by compiling the expression.
+	\item \textbf{Adjusting types} : Some \fcolorbox{processblue}{processblue!10}{additional signals} can be created to make the type of the expression fit the left hand side one.
+	\item \textbf{Modifying trees} : Building the global tree of the modified variable, keeping some \fcolorbox{processpurple}{processpurple!10}{old sub-trees} and building \fcolorbox{processgreen}{processgreen!10}{new inner nodes}.
+\end{enumerate}
+
+\newbox\assign
+\begin{lrbox}{\assign}
+	\begin{minipage}[t]{.35\textwidth}
+\begin{lstlisting}[language=Whiley]
+type T is {bool|int a, byte b}
+		
+function answer(T t) -> T:
+    t.a = 42
+    return t
+\end{lstlisting}
 	\end{minipage}
 \end{lrbox}
 
+\begin{figure}[h]
+	\centering
+	\subfloat[Assignment statement]{\adjustbox{valign=b}{\usebox\assign}}
+	\qquad \subfloat[Tree respresenting t after assignment]{\begin{tikzpicture}
+		\small
+		
+		\node[general={processgreen}{.6}] (A) at (0,0) {t};
+		
+		\node[general={processgreen}{1.6}] (B) at (2,-.4) {a};
+		\node[general={processblue}{1.6}] (BA) at (4.5,-.6) {opt0};
+		\node[general={processblue}{1.9}] (BAA) at (7,-.8) {has : \code{false}};
+		\node[general={processblue}{1.9}] (BAB) at (7,-1.4) {val : \code{false}};
+		\node[general={processblue}{1.6}] (BB) at (4.5,-1.8) {opt0};
+		\node[general={processblue}{1.9}] (BBA) at (7,-2) {has : \code{true}};
+		\node[general={processred}{1.9}] (BBB) at (7,-2.6) {val : \code{42}};
+		\node[general={processpurple}{1.6}] (C) at (2,-2.6) {b};
+		\path (A.south) edge [out=-90, in=180] (B.west);
+		\path (A.south) edge [out=-90, in=180] (C.west);
+		\path (B.east) edge [out=-0, in=180] (BA.west);
+		\path (BA.east) edge [out=-0, in=180] (BAA.west);
+		\path (BA.east) edge [out=-0, in=180] (BAB.west);
+		\path (B.east) edge [out=-0, in=180] (BB.west);
+		\path (BB.east) edge [out=-0, in=180] (BBA.west);
+		\path (BB.east) edge [out=-0, in=180] (BBB.west);
+		\normalsize
+		\end{tikzpicture}}
+	\caption {Example of assignment}
+\end{figure}
+
+\paragraph{\code{If} statements and returns}\pindent
+
+\newbox\ifm
+\begin{lrbox}{\ifm}
+	\begin{minipage}[t]{.322\textwidth}
+\begin{lstlisting}[language=Whiley]
+function s(int a) -> int:
+    if a%2 == 0:
+        a = a/2
+    else:
+        a = 3*a+1
+    return a
+\end{lstlisting}
+	\end{minipage}
+\end{lrbox}
+\newbox\ifn
+\begin{lrbox}{\ifn}
+\begin{minipage}[t]{.322\textwidth}
+\begin{lstlisting}[language=Whiley,showlines=true]
+function s(int a) -> int:
+    if a%2 == 0:
+        return a/2
+    return 3*a+1
+    
+    
+\end{lstlisting}
+\end{minipage}
+\end{lrbox}
 
 \begin{figure}[h]
 	\centering
-	\subfloat[Unique return]{\usebox\caseA}
-	\hspace{.77cm}
-	\subfloat[Multiple returns]{\usebox\caseB}
+	\begin{minipage}{.7\textwidth}
+\quad Contrary to usual compilation that use conditional jump on relevant part of the program, both true and false branch, as well as the condition are compiled separately, using pre-statement variable's representations. Modified variables are then gather using a multiplexer. \\
+
+\quad A extra care has to be taken with the management of returns when several statements are used : because they are compile as an assignment to special output variables, they must be merged as if there was a unique return statement.
 	
-	\subfloat[Resulting data-flow graph]{\includegraphics[scale=.28]{a.png}}
-	\caption{Two descriptions of the same data-flow graph}
+	~\subfloat[Multiples return]{\adjustbox{valign=b}{\usebox\ifn}}	
+	\qquad	\subfloat[Unique return]{\adjustbox{valign=b}{\usebox\ifm}}
+	\end{minipage}~~
+	\begin{minipage}{.28\textwidth}
+	\subfloat[Resulting data-flow graph]{\adjustbox{valign=b}{\includegraphics[scale=.23]{if.png}}}
+	\end{minipage}
+	\caption{If statement and multiple returns}
 \end{figure}
 
 
-\subsubsection{Building a pipeline}
 
+
+
+\paragraph{Function invocations}\pindent
+
+Function calls are compile to a special untyped vertex that contains necessary details about the function. It has as many sources as the function's arguments and its only targets are special symbolic vertexes that represent the return values of the function.
+
+
+\subsubsection{Flow typing}
+\label{FlowT}\indent
+
+Flow typing provides a very convenient way to deal with constructed types and its support relies mainly on the operator \code {is} and alias declarations.
+
+
+\paragraph{Operator \code is}~\\\indent
+
+This boolean operator introduces type checking at execution time. Used in a \code if statement, it precise the value of the variable checked in both branches.
+
+It is implemented in VHDL using the additional signals of the representation of union types. It is thus very easy and require no operation to check with case of an option is the effective one.
+
+\paragraph{Aliases}~\\\indent
+
+In the branches of an if statement with a type checking, the variables checked are access through aliases, that can be seen as a lens refining the type of original variables. 
+
+It is translated by extracting the sub tree that correspond to the precise type.
+
+
+\subsection{Building a pipeline}
 \label{Opts}
+\indent
 
-The conversion of this graph to VHDL is only one half of the work to be done. In order to make the components be connected with others or with other computation devices, some invariant in the production of data have to be arbitrary chosen and guaranteed.
+The construction of the data-flow graph organized the computation spatially, showing operations that can be carried out side by side. The computation model also need to be analysed through time.
 
-Several options are possible to make the whole system work :
+\subsubsection{Objectives}
+\indent
 
-\paragraph{Cycle number guarantee}
-~\\
-The easiest solution to connect different circuits is to provide the same time execution guarantee for each part of the configuration. 
+FPGAs and compilation to hardware are mainly targeted to improve performances. A common way to ensure a maximum use of silicon lies in building a pipeline : the process is separated in several steps that can be executed simultaneously. The computation of a new value can thus be started after the completion of only one step instead of waiting for the whole calculation to finish.\\
 
-To avoid a low clock frequency, the computation should be split into several part separated by registers. To do this, the data-flow graph has to be split to know with value are needed in several pipeline steps.
+\begin{wrapfigure}[8]{r}{.4\textwidth}
+	\vspace{-15pt}
+	\begin{tikzpicture}[
+	calc/.style ={rectangle,rounded corners=2mm, minimum width=.9cm, minimum height=.4cm,draw=#1,fill=#1!20,thick},
+	step/.style ={rectangle, minimum width=6.2cm, minimum height=.5cm,fill=#1,thick}
+	]
+	
+	\node at (1.5,0) [step={grey1}] {};
+	\node at (1.5,.5) [step={grey2}] {};
+	\node at (1.5,1) [step={grey3}] {};
+	
+	\node at (0,0) [calc={processred}] {};
+	\node at (1,.5) [calc={processred}] {};
+	\node at (1,0) [calc={processgreen}] {};
+	\node at (2,1) [calc={processred}] {};
+	\node at (2,.5) [calc={processgreen}] {};
+	\node at (2,0) [calc={processblue}] {};
+	\node at (3,1) [calc={processgreen}] {};
+	\node at (3,.5) [calc={processblue}] {};
+	\node at (4,1) [calc={processblue}] {};
+	
+	\draw (-.5,-.6) -- (-.5,-.3) [->,color=processred,thick];
+	\draw (.5,-.6) -- (.5,-.3) [->,color=processgreen,thick];
+	\draw (1.5,-.6) -- (1.5,-.3) [->,color=processblue,thick];
+	\draw (2.5,1.3) -- (2.5,1.6) [->,color=processred,thick];
+	\draw (3.5,1.3) -- (3.5,1.6) [->,color=processgreen,thick];
+	\draw (4.5,1.3) -- (4.5,1.6) [->,color=processblue,thick];
+	
+	\draw (-1.6,-.25) -- (4.6,-.25) [->,,thick];
+	\node at (4.4,-.5) {t};
+	\node at (-1.1,-.05) {Step 1};
+	\node at (-1.1,.45) {Step 2};
+	\node at (-1.1,.95) {Step 3};
+	
+	\end{tikzpicture}
+	\caption{Simple three-steps pipeline}
+\end{wrapfigure}
+
+The orchestration of the pipeline can be made with a clock that governs the sending of a step's outputs to the next one's inputs. The frequency of the clock will be determined by the longest step of the pipeline thus dividing the process in several simple steps can improve the throughput.\\
 
 
-\paragraph{State signals}
-~\\
-A state machine can be set up for each parts of the project, with some signals telling if the entity can read new data or if new outputs are ready. This solution has the benefit to support unbound calculations (loops) but prevent every time guarantee and lead to a bigger configuration.
+The introduction of a clock make also interfacing with other processors easier. This is particularly relevant in the case of FPGAs that are often used in heterogeneous architecture.\\
+
+The pipeline is build at the function level, which means that inputs and outputs of data-flow graphs are synchronized : inputs must provided at the same time and outputs will be ready simultaneously.
 
 
 
-\subsection{Implementation details}
+\subsubsection{Introducing registers}
+\indent
 
-Using Java
 
-Compilation construct as a pipeline (The result of a step is given to the next one)
+The introduction of steps lies in the addition of registers through the computation process that will draw boundaries between the different parts of the calculation. \\
+
+Inferring the good places where to split the computation appears a complex job and the programmer should have a way to specify it to keep a precise control of the produce hardware configuration. 
+
+
+\paragraph{The \whileyLine{skip} statement} \pindent
+
+To study the impact and feasibility of this feature without modifying the language, the unused \whileyLine{skip} statement was reserved to indicate the introduction of steps at the block of code level.\\
+
+
+
+\begin{wrapfigure}{r}{0.28\textwidth}
+\vspace{-20pt}
+\begin{lstlisting}[language=Whiley, frame=single, showlines=true]
+function inc(bool a,
+        int b) -> int:
+    if a:
+         b = b + 1
+         skip
+    return b
+\end{lstlisting}
+\end{wrapfigure}
+
+When a \whileyLine{skip} statement is encountered, vertexes representing variables are transformed by adding to them a register. The compilation carry on further block's statements using these new vertexes. At the end of the block, unmodified variables are restored to their previous state.
+
+
+\begin{wrapfigure}[18]{r}{0.28\textwidth}
+	\center
+\vspace{-22pt}
+	\includegraphics[scale=.22]{Reg_A.png}
+	\caption{Resulting data-flow graph}
+	%\vspace{-10pt}
+	\label{fig:skip}
+\end{wrapfigure}
+
+\paragraph{Modifying the language}\pindent
+
+From the perspective of adapting the language to this specific compilation target, two ways of introducing registers could be considered~:
+
+\begin{itemize}
+	\item \textbf{A block boundary} : A specific keyword \code{} or \code{} could be introduce to notify the splitting of a block into two parts.
+	\item \textbf{A variable boundary} : Because splitting the whole block into two parts can be irrelevant, registers should be addable to precise variables. It can currently be achieved with the block boundary using a named block that modify only the desired variable, but this hack befuddle the resulting code.
+\end{itemize}
+
+These modifications could be gathered with a unique keyword that can be used either alone or with variables.
+
+\subsubsection{Synchronizing sources}
+\indent
+
+\begin{wrapfigure}[15]{r}{0.3\textwidth}
+	\vspace{-39pt}
+	\includegraphics[scale=.23]{Reg_B.png}
+	\caption{Synchronized data-flow graph}
+\end{wrapfigure}
+
+During the building of data-flow graphs, registers are only added where \whileyLine{skip} statements were encountered. The resulting graph may contain inconsistency between sources. \autoref{fig:skip} shows the a vertex with two sources ready immediately whereas its last one needs one more cycle.\\
+
+To ensure a that the wanted result is computed, two constructions can be considered~:
+
+\begin{itemize}
+\item Keeping the same result as long as it may still be needed
+\item Adding registers to delay early sources. 
+\end{itemize}
+
+The second option enable to use the pipeline at its higher rate (one input per clock tick). It can however delay vainly the result in the case of \code{mux} where the unselected option is ready after the selected one.
+
+
+\subsection{Adding loops}
+\indent
+
+Loops are commonly used in software programming languages. However, HDL such as VHDL only allow statically known loops that can be unfold in the resulting design.
+
+\subsubsection{General considerations on loops}\indent
+
+A loop is a syntactical construction that enables a set of instructions (the body) to be successively executed a (possibly null) number of time that depend on the value of a specific expression (the condition). Several facts need to be kept in mind to introduce their support.
+\begin{itemize}
+	\item Contrary to other statements, the length of the calculation is not statically known, because the number of iteration is often dynamically determined.
+	\item The same piece of code/circuit must be used several time in the computation of a single entry, owing to the fact that circuits/programs are spatially finite.
+	\item This multiple use of the same circuit prevent to build a pipeline as it was previously described. The synchronization of vertexes' sources must be adapted to this new kind of unknown latency.
+\end{itemize}
+
+Loops where considered is the most case, with no guarantee on their execution. When additional information is known, some of the constructions can be optimized....
+
+
+\textbf{\textsl{Remark :}} Using unbound loops does not seem to be an appropriated design for hardware description. However, it may sometimes be relevant and adding their support made a comprehensive time analysis unavoidable, which improved greatly the processing of code without loops.
+
+
+\subsubsection{Introducing loops in the data-flow graph} \indent
+
+The conversion of \code {while} statement to data-flow graph vertexes is worth mentioning. A special \code {while} vertex is provided, which sources are the variables that are used in the loop and which targets are new symbolic vertexes that represent the updated value of variables modified by the loop.\\
+
+Additionally, this vertex contains two data-flow graphs : one for the body of the loop and an other for the computation of the condition.\\
+
+
+\subsubsection{Adding state signals} \indent
+
+During the time analysis, body and condition data-flow graphs of \code {while} vertexes are merge in the global graph, surrounded with additional logic.
+
+converted to a set of VHDL-compatible ones.
+In agreement with the computation model of VHDL, every part of the design will be evaluated at each cycle. A way to distinguish result that are meaningful from others if thus needed. It reside in the addition of state signals that contains the progress of the computation.\\
+
+
+A simple approach uses only two state signals : a \textit{Start} input signal that is activated when entries are send, and a \textit{Done} output one that indicates when circuit's outputs are the results of the computation.
+
+	
+	\begin{figure}[h]
+		\center
+		\begin{circuitikz}[-,terminal/.style={
+				% The shape:
+				rounded rectangle,
+				minimum size=1.6mm,
+				% The rest
+				thick,draw=black}]
+			
+			\draw (8.2,7) node[Reg] (RegS) {};
+			\draw (8.2,3) node[Reg] (RegD) {};
+			
+			\draw (-1.5,3) node (inputs) {};
+			\draw (12.5,3) node (outputs) {};
+			
+			\draw (0.5,3) node (step) {};
+			\draw (step)+(-.5,0) node (stepR) {};
+			
+			\draw 
+				(5.5,5) node[BlockCB,align=center] (While) {\Large Condition \\ \Large \& \\ \Large Body}
+				
+				(While.out data) -- ++(1.1,0) |- (RegD.east)
+			;	
+			\draw (While.in start -| step) node[or port] (OrS) {};
+			\draw (While.in data -| stepR) node[muxT] (MuxD) {};
+			
+			\draw 
+				(OrS.in 2 -| inputs) node[terminal] (S) {Start}
+				
+				(OrS.out) -- ++(.2,0) |- (While.in start)
+				
+				(S.east) -| (OrS.in 2)
+				(RegS.west) -| (OrS.in 1)
+			;
+			\draw 
+				(MuxD.in true -| inputs) node[terminal] (D) {Data}
+				
+				(MuxD.out) -- ++(.6,0) |- (While.in data)
+				
+				(S.east)+(0.1,0) |- (MuxD.in cond)
+				(D.east) -| (MuxD.in true)
+				(RegD.west)   -| (MuxD.in false)
+			;
+			
+			\draw 
+				(10.1,6) node[and port] (AndS) {}
+				(While.out done) -- ++(.2,0) |- (AndS.in 1)
+				(While.out test) -- ++(.6,0) |- (AndS.in 2)
+				(AndS.out) |- (RegS.east)
+			;	
+			
+			\draw
+				(1.4,5.3) node[muxT,red] (DataS) {}
+				(MuxD.out) |- (DataS.in true)
+				(OrS.out) -| (DataS.in cond)
+			;
+			\draw
+				(DataS)+(1,-0.75) node[Reg,red] (RegDa) {}
+				(RegDa.west) -| (DataS.in false) [red]
+			;
+			
+			
+			\draw 
+				(9.5,4.55) node[not port] (Not) {}
+				(While.out test) -- ++(.6,0) |- (Not.in)
+			;	
+			
+			\draw 
+				(11.7,5) node[and port] (AndNS) {}
+				(While.out done) -- ++(.2,0) |- (AndNS.in 1)
+				(Not.out) |- (AndNS.in 2)
+			;	
+			\draw 
+				(AndNS.out -| outputs) node[terminal] (Done) {Done}
+				(AndNS.out) -- (Done.west)
+			;
+			\draw 
+				(12.5,2.3) node[terminal] (Res) {Data}
+				(DataS.out)  -- ++(1.3,0) |- (Res.west)
+			;
+			
+			\draw
+				(DataS.out) -- ++(1.3,0) |- (RegDa.east) [red]
+			;
+			
+			
+		\end{circuitikz}
+		\caption{Additional logic around loops}
+		\label{Dloops}
+	\end{figure}
+	
+\autoref{Dloops} details the additional logic build around loop's body and condition in a simple case where they are supposed to be ready at the same time.  This diagram shows that a extra iteration is computed, that is dropped if not necessary. The results of the previous iteration (or the inputs) are stored in a buffer waiting for the condition value to be ready.
+
+
+
+
+\subsubsection{Synchronizing sources} \indent
+
+
+\begin{wrapfigure}[22]{r}{.38\textwidth}
+\vspace{-15pt}
+\center
+	\begin{tikzpicture}[
+		while/.style ={rectangle,rounded corners=2mm, minimum width=.6cm, minimum height=.6cm,draw=#1,fill=#1!20, thick,align=center}	
+	]
+	
+	\def\border{(2,-1) -- (0,0) -- (0,5.5) -- (2,6.5) -- (4,6.5) -- (6,5.5) -- (6,0) -- (4,-1) -- cycle}
+	\def\reversed{(-10,10) -- (-10,-10) -- (10,-10) -- (10,10) -- (-10,10)}
+		\path[name path=border] \border;
+	
+
+\begin{pgfinterruptboundingbox}
+	\foreach \n/\c/\p in {{R/processred/(5,5)},{G/processgreen/(1,5)},{B/processblue/(5,3)}}{
+		\begin{scope} % red + green = yellow
+			\clip \p -- +(8,-8) -- +(-8,-8) -- cycle;
+			\draw [fill=\c!20,draw=none] \border;
+		\end{scope}
+		\path[name path=lg] \p -- ++(-8,-8);
+		\path[name path=rg] \p -- ++(8,-8);
+		\path [name intersections={of=border and lg,by=liW\n}];
+		\path [name intersections={of=border and rg,by=riW\n}];
+		\draw [-, \c]
+			\p -- (liW\n)
+			\p -- (riW\n)
+		;
+		\node at \p [while={\c}] (W\n) {};
+		\node at \p {\textbf{\n}};
+}
+
+	\begin{scope}
+		\clip (WR) -- ++(-8,-8) -- +(16,0) -- (WR)-- cycle;
+		\clip (WG) -- ++(-8,-8) -- +(16,0) -- (WG)-- cycle;
+		\draw[-,fill=processyellow!20,draw=none] \border;
+	\end{scope}	
+	\begin{scope}
+		\clip \border;
+		\clip (WG) -- ++(-8,-8) -- +(16,0) -- (WG)-- cycle;
+		\draw[-,draw=processyellow] (WR) -- +(-8,-8);
+	\end{scope}	
+	\begin{scope}
+		\clip \border;
+		\clip (WR) -- ++(-8,-8) -- +(16,0) -- (WR)-- cycle;
+		\draw[-,draw=processyellow] (WG) -- +(8,-8);
+	\end{scope}	
+	\begin{scope}
+		\clip (WG) -- ++(-8,-8) -- +(16,0) -- (WG)-- cycle;
+		\clip (WB) -- ++(-8,-8) -- +(16,0) -- (WB)-- cycle;
+		\draw[-,fill=processcyan!20,draw=none] \border;
+	\end{scope}	
+	\begin{scope}
+		\clip \border;
+		\clip (WG) -- ++(-8,-8) -- +(16,0) -- (WG)-- cycle;
+		\draw[-,draw=processcyan] (WB) -- +(-8,-8);
+	\end{scope}	
+	\begin{scope}
+		\clip \border;
+		\clip (WB) -- ++(-8,-8) -- +(16,0) -- (WB)-- cycle;
+		\draw[-,draw=processcyan] (WG) -- +(8,-8);
+	\end{scope}	
+	
+	\begin{scope}
+		\node at (3,6.5) [rectangle,rounded corners=2mm,thick,draw=black] (In) {\textbf{Inputs}};
+		\node at (3,-1) [rectangle,rounded corners=2mm,thick,draw=black] (Out) {\textbf{Outputs}};
+		\clip \reversed -- (In.north east) rectangle (In.south west) ;
+		\clip \reversed -- (Out.north east) rectangle (Out.south west) ;
+		\draw [-, thick] \border;
+	\end{scope}
+\end{pgfinterruptboundingbox}
+	
+		\node at (1,3) {\textbf{\{G\}}};
+		\node at (5,4) {\textbf{\{R\}}};
+		\node at (5,2) {\textbf{\{B\}}};
+		\node at (3,2) {\textbf{\{R,G\}}};
+		\node at (4,1) {\textbf{\{G,B\}}};
+	
+	\end{tikzpicture}
+	\caption{Abstract representation of a data-flow graph with 3 inner seeds and their zone of influence}
+	\label{LSync}
+\end{wrapfigure}
+
+
+The synchronization of data that can be ready an arbitrary time after the beginning of calculation necessitates the use of buffers. The red part of \autoref{Dloops} circuit shows a simple buffer that updates its value regarding a storing signal.\\
+
+
+A first approach to sources synchronization consists in adding a \textit{delay} information (number of cycles needed or special unknown value) to vertexes that handles the length of computation from inputs to it. Buffers are then added where unknown delays are encountered. It leads to an over used of such components that should be avoid. \\
+
+
+A more relevant study of delays can save a lot of these useless buffers : vertexes are decorated with the set of \textit{seeds} from which they are delayed by a known number of cycles. These seeds are either a special input seed or inner seeds that correspond to vertexes with an unknown latency (while nodes or functions call with an unknown latency). The data-flow graph is thus divided into parts sharing the same set of seeds, and registers are only needed when arrows cross a zone boundary.
+
+
+
+\subsubsection{Improving concurrency} \indent
+
+The introduction of loops lower greatly the possible concurrency : a new computation cannot be start as long as a loop is still running because it could be still unfinished when new data will come to it. Some enhancements can nevertheless be achieved.
+
+
+
+
+\definecolor {cycle0}{hsb}{0,1,1}
+\definecolor {cycle0.5}{hsb}{.03,1,1}
+\definecolor {cycle1}{hsb}{.06,1,1}
+\definecolor {cycle1.5}{hsb}{.09,1,1}
+\definecolor {cycle2}{hsb}{.12,1,1}
+\definecolor {cycle2.5}{hsb}{.15,1,1}
+\definecolor {cycle3}{hsb}{.18,1,1}
+\definecolor {cycle3.5}{hsb}{.21,1,1}
+\definecolor {cycle4}{hsb}{.24,1,1}
+
+
+\definecolor {cond1}{hsb}{.8,0,.8}
+\definecolor {cond2}{hsb}{.8,0,.85}
+\definecolor {cond3}{hsb}{.8,0,.9}
+\definecolor {cond4}{hsb}{.8,0,.95}
+\definecolor {sep}{hsb}{.6,.6,.6}
+
+\begin{wrapfigure}[17]{r}{.6\textwidth}
+	\vspace{-30pt}
+	\center
+	\begin{tikzpicture}[
+	body/.style 2 args={shading = axis, shading angle = 0, rectangle,rounded corners=2mm, minimum width=.9cm, minimum height=.4cm,draw=#1,left color=#1!20, right color=#2!20, draw=none,horizontal shaded border=#1 and #2},
+	cond/.style ={rectangle,rounded corners=2mm, minimum width=.9cm, minimum height=.4cm,draw=#1,fill=#1!20, thick,text height=.2cm,align=center},
+	buff/.style ={rectangle,rounded corners=2mm, minimum width=1.9cm, minimum height=.4cm,draw=#1,fill=#1!20, thick,text height=.2cm,align=center},
+	step/.style ={rectangle, minimum width=9.6cm, minimum height=.5cm,fill=#1,draw=none}
+	]
+	
+	\node at (2.7,0) [step={cond1}] {};
+	\node at (2.7,.5) [step={cond4}] {};
+	\node at (2.7,1) [step={cond1}] {};
+	\node at (2.7,1.5) [step={cond2}] {};
+	\node at (2.7,2) [step={cond3}] {};
+	\node at (2.7,2.5) [step={cond4}] {};
+	\node at (2.7,3) [step={cond1}] {};
+	\node at (2.7,3.5) [step={cond4}] {};
+	
+	\node at (0,1) [cond={cycle0}] {};
+	\node at (0,0) [body={cycle0}{cycle0.5}] {};
+	\node at (.5,3) [buff={cycle0}] {};
+	\node at (1,1.5) [cond={cycle0}] {};
+	\node at (1,.5) [body={cycle0.5}{cycle1}] {};
+	\node at (2,2) [cond={cycle0}] {};
+	\node at (2,1) [cond={cycle1}] {};
+	\node at (2,0) [body={cycle1}{cycle1.5}] {};
+	\node at (2.5,3) [buff={cycle1}] {};
+	\node at (2.5,3.5) [buff={cycle0}] {};
+	\node at (3,2.5) [cond={cycle0}] {\small{0}};
+	\node at (3,1.5) [cond={cycle1}] {};
+	\node at (3,.5) [body={cycle1.5}{cycle2}] {};
+	\node at (4,2) [cond={cycle1}] {};
+	\node at (4,1) [cond={cycle2}] {};
+	\node at (4,0) [body={cycle2}{cycle2.5}] {};
+	\node at (4.5,3) [buff={cycle2}] {};
+	\node at (4.5,3.5) [buff={cycle1}] {};
+	\node at (5,2.5) [cond={cycle1}] {\small{0}};
+	\node at (5,1.5) [cond={cycle2}] {};
+	\node at (5,.5) [body={cycle2.5}{cycle3}] {};
+	\node at (6,2) [cond={cycle2}] {};
+	\node at (6,1) [cond={cycle3}] {};
+	\node at (6,0) [body={cycle3}{cycle3.5}] {};
+	\node at (6.5,3) [buff={cycle3}] {};
+	\node at (6.5,3.5) [buff={cycle2}] {};
+	\node at (7,2.5) [cond={cycle2}] {\small{1}};
+	\node at (7,1.5) [cond={cycle3}] {};
+	\node at (7,.5) [body={cycle3.5}{cycle4}] {};
+	
+	\draw (-.5,-.6) -- (-.5,-.3) [->,color=cycle0,thick];
+	\draw (7.5,3.75) -- (7.5,4.05) [->,color=cycle2,thick];
+
+	
+	\draw (-2.1,-.25) -- (7.6,-.25) [->,thick];
+	\draw (-2.1,.75) -- (7.5,.75) [-,thick, sep];
+	\draw (-2.1,2.75) -- (7.5,2.75) [-,thick, sep];
+	
+	\node at (7.4,-.5) {t};
+	\node at (-1.1,-.05) {Step 1};
+	\node at (-1.1,.45) {Step 2};
+	\node at (-1.1,.95) {Step 1};
+	\node at (-1.1,1.45) {Step 2};
+	\node at (-1.1,1.95) {Step 3};
+	\node at (-1.1,2.45) {Step 4};
+	\node at (-1.1,2.95) {Reg 1};
+	\node at (-1.1,3.45) {Reg 2};
+	
+	\node at (-1.85,.25) [rotate=90] {\textbf{Body}};
+	\node at (-1.85,1.75) [rotate=90] {\textbf{Condition}};
+	\node at (-1.85,3.25) [rotate=90] {\textbf{Sync}};
+	
+	\end{tikzpicture}
+	\caption{Optimized loop construction in the case of a 2-cycles long body and a 4-cycles long condition}
+\end{wrapfigure}
+
+\paragraph{Improving loop construction}\pindent
+
+Synchronizing body and condition of loops is unnecessary : the computation can stop as soon as the result of the condition is ready and false. However, it necessary to wait for the body to complete before starting to evaluate the next condition's value.
+
+
+\paragraph{Defining  concurrency}\pindent
+
+Without further knowledge, a decent concurrency/space trade-off consists in setting the maximum number of values that can be processed at the same time. Fixed-size buffers and then needed before loops to ensure smth.
+ 
+\subsection{Future work} \indent
+
+This study has set up some bases of compilation toward FPGAs, but several subjects could be further studied :
+
+\begin{itemize}
+	\item \textbf{Targeting net-list} : To avoid as much as possible the dependency toward proprietary tools, net-lists could be produced instead of VHDL.
+	\item \textbf{Type representation optimization} : A deeper analysis of types could lead to more compact representation of typed values, with less redundancy. 
+	\item \textbf{Data-flow graph optimization} : Several simplification of data-flow graphs would Optimization on the data-flow graph could improve the generated code briefness.
+	\item \textbf{Using constraint informations} : Analysing constraints on types would enable to adjust more sharply the representation to the possible values.
+	\item \textbf{Adding bounds on loops} : Further information on loop execution (bounds on the number of iterations) that should be checkable by the theorem prover lead to a very interesting on the building of an optimized pipeline.
+	\item \textbf{Inlining relevant function} : In order to avoid synchronization of inputs and outputs, the data-flow graph of certain called functions could be inserted in the caller's one.
+	\item Improving the language support (array, complex operations, part of references)
+\end{itemize}
+ 
+\section*{Conclusion}\indent
+\addcontentsline{toc}{section}{Conclusion}
+
+[To finished]
+
+Limitation of the language support
+
+Easy representation of high-level operation (is) that is not possible in a lower level language (c)
+
+To have a relevant hardware language embedded in Whiley : need to introduce some specific language statements to give a precise control on the code.
  
  
- 
- 
+ \newpage
  \bibliographystyle{alpha}
  \bibliography{References}
+\newpage
+\section*{Annex : A working example}\indent
+\addcontentsline{toc}{section}{Annex : A working example}
+
+A naive implementation of a Euclidean division of positive integers was chosen to enlighten the main features of the compiler. [To complete]
+
+\newbox\wcode
+\begin{lrbox}{\wcode}
+\begin{minipage}[t]{.45\textwidth}
+\begin{lstlisting}[language=Whiley, frame=single, showlines=true, numbers=left]
+type Result is {int q, int r}
+
+function div(int a, int b) 
+    -> Result|null:
+  if b==0:
+    return null
+  Result d = {q:0,r:a}
+  while d.r >= b:
+    d.q = d.q + 1
+    d.r = d.r - b
+  return d
+
+function main(int a, int b) 
+    -> (int q,int r):
+  Result|null d = div(a,b)
+  if d is Result:
+    return d.q,d.r
+  return 0,0
+\end{lstlisting}
+\end{minipage}
+\end{lrbox}
+
+\begin{figure}[H]
+\centering
+\subfloat[Division implementation]{\adjustbox{valign=b}{\usebox\wcode}}
+\quad \subfloat[Synchronized data-flow graph of \lstinline{main} function]{\includegraphics[width=.48\textwidth]{MainSync.png}}
+
+\subfloat[Screen-shot of the simulator. (Colours were modified to improve readability) Computations start at the first clock rising edge after the change of a entry]{\includegraphics[width=\textwidth]{While_Sim.png}}
+\caption {Example of assignment}
+\end{figure}
+
+
+
+
 
 \end{document}
